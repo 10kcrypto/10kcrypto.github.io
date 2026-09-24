@@ -144,6 +144,7 @@ table.lb tr.me td{background:#2A1E5C}
     <div id="walBox" style="width:100%;max-width:300px"></div>
     <div class="stack">
       <button id="bPlay" class="btn big blink">PRESS START</button>
+      <div class="diffs" id="modeList" style="grid-template-columns:1fr 1fr"></div>
       <div class="diffs" id="diffList"></div>
       <div class="row2">
         <button id="bHangar" class="btn ghost">機庫</button>
@@ -156,6 +157,7 @@ table.lb tr.me td{background:#2A1E5C}
     </div>
     <div class="best">BEST <span id="wBest">0</span></div>
     <div class="tag" id="heroTag" style="background:var(--gold);color:#2A1A00" hidden>✦ 傳說的 10K 勇者 ✦</div>
+    <div class="tag" id="godTag" style="background:#fff;color:#2A1A5C" hidden>⚡ 擊敗神的小狗 ⚡</div>
     <div class="fine" id="wRank" style="font-size:12px;color:var(--ink)"></div>
     <div class="fine">遊戲幣只能透過儲值 10KDOG 取得（1,000 10KDOG = 100 幣），用於抽戰機與升級，無法提領。</div>
   </div>
@@ -268,7 +270,7 @@ function resize(){const r=app.getBoundingClientRect();SC=r.width/IW;H=Math.max(3
 
 /* ---------- 存檔 ---------- */
 const KEY='10kdog_shooter_v3';
-function fresh(){return{coins:0,best:0,up:{power:0,rate:0,hp:0,magnet:0},daily:'',shiny:0,jet:'black',jets:['black','white'],lb:[],seen:[],ult:'homing',introSeen:0,diff:'normal',hellCleared:0}}
+function fresh(){return{coins:0,mode:'main',best:0,up:{power:0,rate:0,hp:0,magnet:0},daily:'',shiny:0,jet:'black',jets:['black','white'],lb:[],seen:[],ult:'homing',introSeen:0,diff:'normal',hellCleared:0}}
 let S=fresh();
 try{const o=JSON.parse(localStorage.getItem(KEY)||'null');if(o){S=Object.assign(fresh(),o);S.up=Object.assign(fresh().up,o.up||{})}}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
@@ -303,9 +305,17 @@ const JETS=(()=>{const arr=[
   arr.push({k:'rainbow',name:'彩虹傳說機',rar:3,desc:'全屬性 +30%・生命 +2・磁石 ×3',spd:1.3,dmg:1.3,rate:1.3,hp:2,inv:2,mag:3,base:3,hue:0,style:5});
   arr.push({k:'chrome',name:'黃金 10K 神機',rar:3,desc:'傷害 +100%・生命 +2・磁石 ×3',spd:1.15,dmg:2,rate:1.15,hp:2,inv:1.5,mag:3,base:1,hue:45,style:6});
   arr.push({k:'void',name:'暗物質幽靈機',rar:3,desc:'移速 +60%・無敵 ×3・射速 +40%',spd:1.6,dmg:1.2,rate:1.4,hp:1,inv:3,mag:2,base:2,hue:280,style:7});
+  arr.push({k:'m1',name:'維納斯之翼',rar:5,desc:'神話・擊敗維納斯獲得<br>移速 +25%・磁石 ×2・生命 +1',spd:1.25,dmg:1.1,rate:1.1,hp:1,inv:1.2,mag:2,base:3,hue:330,style:4});
+  arr.push({k:'m2',name:'赫爾墨斯飛靴',rar:5,desc:'神話・擊敗赫爾墨斯獲得<br>移速 +60%・射速 +20%',spd:1.6,dmg:1,rate:1.2,hp:0,inv:1,mag:1,base:2,hue:185,style:2});
+  arr.push({k:'m3',name:'波塞頓三叉戟',rar:5,desc:'神話・擊敗波塞頓獲得<br>傷害 +35%・射速 +15%・生命 +1',spd:1.1,dmg:1.35,rate:1.15,hp:1,inv:1,mag:1,base:2,hue:215,style:3});
+  arr.push({k:'m4',name:'索爾雷錘',rar:5,desc:'神話・擊敗索爾獲得<br>傷害 +50%・生命 +1',spd:1.05,dmg:1.5,rate:1.1,hp:1,inv:1,mag:1,base:0,hue:55,style:4});
+  arr.push({k:'m5',name:'阿瑞斯戰刃',rar:5,desc:'神話・擊敗阿瑞斯獲得<br>射速 +40%・傷害 +30%・移速 +15%',spd:1.15,dmg:1.3,rate:1.4,hp:0,inv:1,mag:1,base:1,hue:0,style:1});
+  arr.push({k:'m6',name:'哈迪斯冥翼',rar:5,desc:'神話・擊敗哈迪斯獲得<br>無敵 ×2・全屬性 +20%・生命 +1',spd:1.2,dmg:1.2,rate:1.2,hp:1,inv:2,mag:1.5,base:3,hue:275,style:1});
+  arr.push({k:'m7',name:'雅典娜盾翼',rar:5,desc:'神話・擊敗雅典娜獲得<br>生命 +2・無敵 ×1.8・磁石 ×2',spd:1.1,dmg:1.2,rate:1.2,hp:2,inv:1.8,mag:2,base:0,hue:40,style:3});
+  arr.push({k:'m8',name:'奧林帕斯王座機',rar:5,desc:'神話・擊敗宙斯獲得<br>全屬性 +40%・生命 +2・無敵 ×2・磁石 ×3',spd:1.35,dmg:1.5,rate:1.35,hp:2,inv:2,mag:3,base:0,hue:50,style:11});
   arr.push({k:'hero',name:'傳說勇者・10K 王者機',rar:4,desc:'A9 通關專屬・不可抽取<br>全屬性 +40%・生命 +3・無敵 ×2・磁石 ×3',spd:1.4,dmg:1.4,rate:1.4,hp:3,inv:2,mag:3,base:0,hue:45,style:10});
   return arr})();
-const RAR=[{name:'預設',col:'#A89CD8'},{name:'普通',col:'#58A8F8'},{name:'稀有',col:'#F8C838'},{name:'傳說',col:'#FF8FB8'},{name:'勇者專屬',col:'#FFFFFF'}];
+const RAR=[{name:'預設',col:'#A89CD8'},{name:'普通',col:'#58A8F8'},{name:'稀有',col:'#F8C838'},{name:'傳說',col:'#FF8FB8'},{name:'勇者專屬',col:'#FFFFFF'},{name:'神話',col:'#C8A0FF'}];
 const GACHA_TOKEN=1000; // 每抽 10KDOG
 const P_LEG=1/10000,P_RARE=0.12; // 傳說萬分之一、稀有 12%、其餘普通
 function gachaRoll(minRar){const r=Math.random();let rar=r<P_LEG?3:r<P_LEG+P_RARE?2:1;if(minRar&&rar<minRar)rar=minRar;const pool=JETS.filter(j=>j.rar===rar);return pool[Math.random()*pool.length|0]}
@@ -323,6 +333,7 @@ function recolor(srcImg,j,big){
     else if(j.style===7){const nb=((p/4)%7===0);h=nb?290:0;sat=nb?1:.1;v=nb?1:v*.35}
     else if(j.style===8){sat=0;v*=.38}
     else if(j.style===9){sat=0;v=Math.min(1,v*1.25)}
+    else if(j.style===11){const band=(y>>1)%4;if(band===0){sat=0;v=1}else if(band===1){h=50;sat=.9;v=1}else if(band===2){h=190;sat=.7;v=1}else{h=50;sat=.5;v=Math.min(1,v*1.1)}}
     else if(j.style===10){const band=(y>>1)%3;if(band===0){sat=0;v=1}else if(band===1){h=45;sat=.95;v=1}else{h=330;sat=.6;v=Math.min(1,v*1.1)}}
     else{h=(j.hue+ (h-((B.lo+B.hi)/2)))%360;if(h<0)h+=360;if(j.style===1){v*=.6}else if(j.style===2){sat*=.7;v=Math.min(1,v*1.15)}else if(j.style===3){sat*=.5;v=Math.min(1,v*1.05)}else if(j.style===4){sat=Math.min(1,sat*1.3);v=Math.min(1,v*1.1)}}
     const i=Math.floor(h/60)%6,f=h/60-Math.floor(h/60),pp=v*(1-sat),q=v*(1-f*sat),t=v*(1-(1-f)*sat);let R,G,Bb;switch(i){case 0:R=v;G=t;Bb=pp;break;case 1:R=q;G=v;Bb=pp;break;case 2:R=pp;G=v;Bb=t;break;case 3:R=pp;G=q;Bb=v;break;case 4:R=t;G=pp;Bb=v;break;default:R=v;G=pp;Bb=q}
@@ -404,6 +415,16 @@ const MONS=[
   {k:'bear',name:'熊市大熊（L4 BOSS）',desc:'熊市來襲：橫掃、扇形、圓環三段彈幕'},
   {k:'ninja',name:'比特幣三姐（L6 BOSS）',desc:'起初完全不攻擊；打到半血會突然爆發極密集彈幕；剩 25% 會消失並從你背後偷襲，那時打不到他，慢慢閃避等他回到原位再打'},
   {k:'crab',name:'爆倉蟹貨（L7 BOSS）',desc:'橫行霸道，兩把鉗子連射，半血後會衝下來撞你'},
+  {k:'spirit',name:'神殿殘影（神話模式）',desc:'諸神的信徒殘影，發著神的光芒，會慢慢朝你靠近'},
+  {k:'venus',name:'維納斯（神話 L1）',desc:'愛與美之神：愛心彈幕、召喚白鴿；半血後施放「愛的重力」讓你變慢'},
+  {k:'hermes',name:'赫爾墨斯（神話 L2）',desc:'神速信使：不斷瞬移並射出高速光箭；半血後會橫向神速衝刺'},
+  {k:'poseidon',name:'波塞頓（神話 L3）',desc:'海洋之王：整排海嘯彈牆只留一個缺口，三叉戟直射；血少時海嘯更快'},
+  {k:'thor',name:'索爾（神話 L4）',desc:'雷神：閃電先有預警線再落雷，雷錘擲出後會飛回他手上'},
+  {k:'ares',name:'阿瑞斯（神話 L5）',desc:'戰神：不斷召喚軍團衝鋒，五向火彈連射；半血後狂暴加速'},
+  {k:'hades',name:'哈迪斯（神話 L6）',desc:'冥王：定期釋放冥界之霧遮蔽視野，靈魂彈會追蹤你，還會喚醒亡魂'},
+  {k:'athena',name:'雅典娜（神話 L7）',desc:'智慧之神：神盾開啟時完全免疫，收盾才打得到；半血後長槍之雨'},
+  {k:'hera',name:'赫拉（神話 L8）',desc:'天后：孔雀羽扇彈幕左右掃動、召喚孔雀；半血後羽扇加圓環齊發'},
+  {k:'zeus',name:'宙斯（神話最終 BOSS）',desc:'眾神之王，三個階段：雷擊與雷環、召喚神鷹與高速雷矢、諸神黃昏雷暴。擊敗他，奧林帕斯神殿將會崩塌'},
 ];
 const RANKS=[
   {min:0,cap:'6K',name:'空氣幣',col:'#6E7AA8'},
@@ -418,7 +439,7 @@ function medalHTML(r,size=22){return `<canvas class="medal" data-rank="${r.cap}"
 function drawMedals(){document.querySelectorAll('canvas.medal[data-rank]').forEach(c=>{const r=RANKS.find(x=>x.cap===c.dataset.rank);const g=c.getContext('2d');g.clearRect(0,0,12,14);
   g.fillStyle='#1A0E14';g.fillRect(3,0,6,5);g.fillStyle='#E8453C';g.fillRect(4,0,4,4);g.fillStyle='#1A0E14';g.fillRect(1,4,10,10);g.fillRect(0,5,12,8);g.fillStyle=r.col;g.fillRect(2,5,8,8);g.fillRect(1,6,10,6);g.fillStyle='rgba(255,255,255,.5)';g.fillRect(3,6,2,1);g.fillRect(2,7,1,2);
   const i=RANKS.indexOf(r);g.fillStyle='#1A0E14';for(let k=0;k<Math.min(3,i);k++)g.fillRect(4+k*2,9,1,2)})}
-const VERSION='beta 2.3';
+const VERSION='beta 3.0';
 /* ---------- Phantom 錢包 ---------- */
 const SOL_RPC='https://solana-rpc.publicnode.com';
 let WAL={addr:null,sol:null};
@@ -535,8 +556,64 @@ const DIALOG={
     {who:'？？？',text:'（10K DOG 星的光，第一次照亮了整個地球。）'},
     {who:'？？？',text:'— 傳說的 10K 勇者・完 —'},
   ],
+  venus_intro:[{who:'維納斯',text:'小狗，你來到了愛與美的花園。看看你身上的傷痕，何必再打下去？'},{who:'維納斯',text:'留下來吧。這裡沒有熊市，也沒有爆倉，只有永恆的美。'},{who:'10K DOG',text:'再美的花園，也困不住想回家的人。'}],
+  venus_dead:[{who:'維納斯',text:'連我的愛……都留不住你嗎……'},{who:'10K DOG',text:'我要的不是留下，而是帶大家一起走。'}],
+  hermes_intro:[{who:'赫爾墨斯',text:'眾神之王的信使赫爾墨斯，奉命傳話：「回頭，或者消失。」'},{who:'赫爾墨斯',text:'你追不上我的。沒有人追得上我。'},{who:'10K DOG',text:'我不需要追上你，我只需要一直往前飛。'}],
+  hermes_dead:[{who:'赫爾墨斯',text:'速度……居然不是一切……'},{who:'10K DOG',text:'替我帶句話給宙斯：小狗來了。'}],
+  poseidon_intro:[{who:'波塞頓',text:'凡人！你敢橫渡我的海域？'},{who:'波塞頓',text:'海嘯將吞沒你的一切，就像吞沒每一個貪婪的水手。'},{who:'10K DOG',text:'我在紅K線的海裡游過，這點浪不算什麼。'}],
+  poseidon_dead:[{who:'波塞頓',text:'我的海……竟然被一隻狗游過去了……'},{who:'10K DOG',text:'海會退，牛市會來。'}],
+  thor_intro:[{who:'索爾',text:'哈！雷神索爾在此！你這小東西，要跟我比力氣？'},{who:'索爾',text:'看見天上的閃電了嗎？那是為你準備的。'},{who:'10K DOG',text:'閃電再快，也有預兆。我看得見。'}],
+  thor_dead:[{who:'索爾',text:'我的雷錘……被一隻小狗躲過了……'},{who:'10K DOG',text:'力氣不是全部，看清楚才是。'}],
+  ares_intro:[{who:'阿瑞斯',text:'戰爭！戰爭！終於有人敢闖進來了！'},{who:'阿瑞斯',text:'我的軍團會踏平你，就像踏平每一個小散戶。'},{who:'10K DOG',text:'我背後也有一個社區。他們不是散戶，是夥伴。'}],
+  ares_dead:[{who:'阿瑞斯',text:'一隻狗……打敗了戰神……'},{who:'10K DOG',text:'不是我打敗你。是你從來沒有真正的夥伴。'}],
+  hades_intro:[{who:'哈迪斯',text:'歡迎來到冥界，小狗。這裡收藏著所有爆倉者的靈魂。'},{who:'哈迪斯',text:'你聽，他們在哭。很快你也會加入他們。'},{who:'10K DOG',text:'我聽見了。所以我更不能倒在這裡。'}],
+  hades_dead:[{who:'哈迪斯',text:'連死亡……都攔不住你……'},{who:'10K DOG',text:'把那些靈魂放了。他們該回家了。'}],
+  athena_intro:[{who:'雅典娜',text:'我是智慧與戰略之神雅典娜。我看過你每一場戰鬥。'},{who:'雅典娜',text:'你很勇敢，但勇敢不等於聰明。神盾之前，一切攻擊皆是徒勞。'},{who:'10K DOG',text:'那我就等你放下盾的那一刻。'}],
+  athena_dead:[{who:'雅典娜',text:'你學會了等待……這是最難的一課。'},{who:'雅典娜',text:'去吧。神殿的大門就在前方。赫拉與宙斯正在等你。'}],
+  hera_intro:[{who:'赫拉',text:'放肆！區區凡間的小狗，竟敢踏進奧林帕斯神殿！'},{who:'赫拉',text:'我是天后赫拉。在我的孔雀羽扇之下，沒有人能站著離開。'},{who:'10K DOG',text:'天后，我不是來拜見的。我是來挑戰的。'}],
+  hera_dead:[{who:'赫拉',text:'不……不可能……宙斯——！'},{who:'？？？',text:'（神殿劇烈震動，天空裂開一道金色的閃電。）'},{who:'宙斯',text:'誰，驚動了眾神之王的安眠？'}],
+  zeus_intro:[{who:'宙斯',text:'一隻小狗。打敗了維納斯、赫爾墨斯、波塞頓、索爾、阿瑞斯、哈迪斯、雅典娜，甚至我的妻子赫拉。'},{who:'宙斯',text:'有趣。但這裡是諸神黃昏。凡人來到這裡，只有一個結局。'},{who:'宙斯',text:'感受吧——眾神之王的雷霆！'},{who:'10K DOG',text:'我一路走來，看見神也會輸。今天，我要親眼看見這一幕。'}],
+  zeus_dead:[{who:'宙斯',text:'這……不可能……眾神之王……敗給了……一隻小狗……'},{who:'？？？',text:'（奧林帕斯神殿在雷光之中崩塌，金色的碎石如雨落下。）'},{who:'10K DOG',text:'諸神黃昏……結束了。'}],
+  mythEnding:[
+    {who:'？？？',text:'（神殿的廢墟上，只剩下一隻小狗，和漫天飄落的金色塵埃。）'},
+    {who:'10K DOG',text:'維納斯的花園、波塞頓的海、哈迪斯的冥界……我全都走過來了。'},
+    {who:'？？？',text:'從天而降的，是諸神最後的低語。'},
+    {who:'維納斯',text:'……你證明了，愛不是把人留下，而是帶人回家。'},
+    {who:'索爾',text:'……你證明了，看清楚比力氣更重要。'},
+    {who:'雅典娜',text:'……你證明了，等待也是一種戰鬥。'},
+    {who:'宙斯',text:'……去吧。從今天起，凡間會流傳一個新的名字。'},
+    {who:'宙斯',text:'——擊敗神的小狗。'},
+    {who:'10K DOG',text:'我不是為了名字而來的。'},
+    {who:'10K DOG',text:'我只是想告訴社區的每一個夥伴：連神都會倒下，熊市又算什麼。'},
+    {who:'？？？',text:'（金色的塵埃落定。小狗轉身，朝著地球的方向飛去。）'},
+    {who:'？？？',text:'— 諸神黃昏・完 —'},
+  ],
   ending:[{who:'10K DOG',text:'拿到了……牛市核心！'},{who:'10K DOG',text:'社區的夥伴們，等我。這次，我們一起迎接牛市。'}],
 };
+
+/* ---------- 神話模式：諸神黃昏 ---------- */
+const MYTH={
+  1:{g:'venus',sub:'愛與美之神：維納斯',col:'#FF7AB8',bg:['#1A0618','#3A0A38','#8A2A6A'],jet:'m1'},
+  2:{g:'hermes',sub:'神速信使：赫爾墨斯',col:'#40E0FF',bg:['#04161C','#0A3038','#2A8A9A'],jet:'m2'},
+  3:{g:'poseidon',sub:'海洋之王：波塞頓',col:'#3A7AFF',bg:['#020A2A','#062050','#1A4AA0'],jet:'m3'},
+  4:{g:'thor',sub:'雷神：索爾',col:'#FFE040',bg:['#141408','#2A2A10','#7A6A20'],jet:'m4'},
+  5:{g:'ares',sub:'戰神：阿瑞斯',col:'#FF3A3A',bg:['#1C0404','#3C0808','#9A1A1A'],jet:'m5'},
+  6:{g:'hades',sub:'冥王：哈迪斯',col:'#B040FF',bg:['#060210','#120628','#3A1A6A'],jet:'m6'},
+  7:{g:'athena',sub:'智慧與戰略之神：雅典娜',col:'#E8C860',bg:['#0E1408','#1E2A10','#6A7A30'],jet:'m7'},
+  8:{g:'hera',g2:'zeus',sub:'奧林帕斯神殿：赫拉與宙斯',col:'#FFE890',bg:['#1A1A3A','#3A3A7A','#C8B070'],jet:'m8'},
+};
+const GODS={venus:'維納斯',hermes:'赫爾墨斯',poseidon:'波塞頓',thor:'索爾',ares:'阿瑞斯',hades:'哈迪斯',athena:'雅典娜',hera:'赫拉',zeus:'宙斯'};
+const GODKEY=Object.fromEntries(Object.entries(GODS).map(([k,v])=>[v,k]));
+const GODC={venus:'#FF7AB8',hermes:'#40E0FF',poseidon:'#3A7AFF',thor:'#FFE040',ares:'#FF3A3A',hades:'#B040FF',athena:'#E8C860',hera:'#40E0C0',zeus:'#FFE890'};
+const BUL_COL={heart:'#FF7AB8',wave:'#60A0FF',bolt:'#FFE040',soul:'#C080FF',feather:'#40E0C0',spear:'#E8C860',fire:'#FF6A3A',hammer:'#C0C0C0'};
+const STORY_MYTH=[
+  '傳說在牛市核心被帶回地球之後，天空出現了另一道裂縫。裂縫的另一端，是眾神居住的奧林帕斯。',
+  '諸神看不起凡間的小狗。他們說：「一隻狗，怎麼可能穿越牛熊？」於是他們降下神諭——諸神黃昏開始，凡人必須臣服。',
+  '10K DOG 沒有臣服。他再次駕起戰機：這一次要挑戰的，不是熊市，而是神。',
+  '穿越八座神域，擊敗每一位神明，最後闖進神殿，面對天后赫拉與眾神之王宙斯。每打倒一位神，就能奪下祂的神器戰機。',
+];
+const bossAt=n=>G.myth?(G.stage2?MYTH[n].g2:MYTH[n].g):BOSS_AT[n];
+function hexA(h,a){return `rgba(${parseInt(h.slice(1,3),16)},${parseInt(h.slice(3,5),16)},${parseInt(h.slice(5,7),16)},${a})`}
 
 /* ---------- 聲效 ---------- */
 let AC=null,lastCoinSfx=0;
@@ -553,6 +630,7 @@ const sfx={
   shiny(){[523,659,784,1046,1318,1568].forEach((f,i)=>setTimeout(()=>beep(f,.18,'square',.06),i*90))},
   jackpot(){[1046,1318,1568,2093].forEach((f,i)=>setTimeout(()=>beep(f,.4,'square',.07),i*120));setTimeout(()=>boom(.3),400)},
   win(){[523,659,784,1046,784,1046,1318,1568].forEach((f,i)=>setTimeout(()=>beep(f,.25,'square',.06),i*130))},
+  thunder(){boom(.3);beep(90,.5,'sawtooth',.08,40)},
 };
 
 /* ---------- 圖 ---------- */
@@ -589,7 +667,23 @@ const HALO=pmap(['.KYYYYYYK.','KY......YK','.KYYYYYYK.'],{K:'#1A0E14',Y:'#FFF0B0
 const HORN=pmap(['K......K','KR....RK','KRK..KRK','.KK..KK.'],{K:'#1A0E14',R:'#E8453C'});
 const BEAR=pmap(['..KK........KK..','.KMMK......KMMK.','.KMMMKKKKKKMMMK.','.KMMMMMMMMMMMMK.','..KMMMMMMMMMMK..','..KMWWMMMMWWMK..','..KMWRMMMMRWMK..','..KMMMMMMMMMMK..','..KMMMppppMMMK..','...KMppKKppMK...','...KMMpKKpMMK...','....KMMMMMMK....','...KMMKMMKMMK...','....KKKKKKKK....'],P);
 let SP={};
-function initSprites(){
+const GODSPR={};
+function godSpr(k){return mk(16,18,g=>{const R=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x,y,w,h)};
+  const C={venus:['#FF7AB8','#FFE8F0','#FFD0E8','#FF3A8A'],hermes:['#40E0FF','#F8E0C8','#A0E8F8','#FFF'],poseidon:['#3A7AFF','#E8D0B8','#1A4AA0','#C8D8FF'],thor:['#FFE040','#F8D8C0','#C83030','#C0C0C0'],ares:['#FF3A3A','#E8B890','#4A1010','#C0C0C0'],hades:['#B040FF','#D8D0F0','#1A0A30','#FFD060'],athena:['#E8C860','#F8E0C8','#8A7020','#C8C8C8'],hera:['#40E0C0','#F8E0C8','#F8C838','#3A7AFF'],zeus:['#FFE890','#F8E0C8','#FFFFFF','#40E0FF']}[k];
+  const [a,skin,robe,acc]=C;
+  R(4,9,8,8,robe);R(3,10,2,6,robe);R(11,10,2,6,robe);R(5,3,6,6,skin);R(6,5,1,1,'#000');R(9,5,1,1,'#000');R(6,17,2,1,'#000');R(8,17,2,1,'#000');
+  switch(k){
+    case 'venus':R(4,2,8,2,a);R(3,3,2,8,a);R(11,3,2,8,a);R(6,11,2,2,acc);R(8,11,2,2,acc);R(7,13,2,1,acc);break;
+    case 'hermes':R(4,2,8,2,a);R(1,1,3,3,'#fff');R(12,1,3,3,'#fff');R(0,10,3,4,'#fff');R(13,10,3,4,'#fff');R(6,12,4,1,a);break;
+    case 'poseidon':R(4,2,8,2,a);R(5,8,6,3,a);R(13,2,1,12,acc);R(12,2,3,1,acc);R(12,1,1,2,acc);R(14,1,1,2,acc);R(6,12,4,1,'#8CC8FF');break;
+    case 'thor':R(4,2,8,2,a);R(3,3,1,3,a);R(12,3,1,3,a);R(2,9,2,8,robe);R(12,9,2,8,robe);R(0,12,4,3,acc);R(1,15,1,3,'#8A6A30');R(6,11,4,3,'#C0C0C0');break;
+    case 'ares':R(4,1,8,3,acc);R(7,0,2,1,a);R(3,4,1,4,acc);R(12,4,1,4,acc);R(4,9,8,8,'#4A1010');R(6,10,4,5,'#C0C0C0');R(14,5,1,10,'#C0C0C0');R(13,8,3,1,'#8A6A30');break;
+    case 'hades':R(4,1,8,2,acc);R(5,0,1,1,acc);R(8,0,1,1,acc);R(11,0,1,1,acc);R(5,3,6,6,'#D8D0F0');R(6,5,1,1,a);R(9,5,1,1,a);R(4,9,8,8,'#1A0A30');R(5,11,6,5,a);R(6,12,4,3,'#1A0A30');break;
+    case 'athena':R(4,1,8,3,a);R(6,0,4,1,'#C83030');R(0,9,4,6,acc);R(1,10,2,4,a);R(14,2,1,14,'#8A6A30');R(13,1,3,2,'#C0C0C0');break;
+    case 'hera':R(4,1,8,2,robe);for(let i=0;i<5;i++){R(4+i*2,(i%2)?0:1,1,1,a)}R(3,3,2,7,'#6A3A20');R(11,3,2,7,'#6A3A20');R(4,9,8,8,robe);R(6,11,4,4,a);R(7,12,2,2,acc);break;
+    case 'zeus':R(4,2,8,2,'#fff');R(3,3,1,3,'#fff');R(12,3,1,3,'#fff');R(5,8,6,4,'#fff');R(4,1,8,1,a);R(4,9,8,8,'#fff');R(6,11,4,5,a);R(13,2,2,3,acc);R(14,5,1,3,acc);R(13,8,2,3,acc);R(12,11,2,3,acc);break;
+  }})}
+function initSprites(){for(const k in GODS)GODSPR[k]=godSpr(k);
   SP.bone=mk(11,7,g=>{g.fillStyle='#FFF4E0';g.fillRect(2,2,7,3);g.fillRect(0,0,3,3);g.fillRect(0,4,3,3);g.fillRect(8,0,3,3);g.fillRect(8,4,3,3)});
 }
 function blit(sp,x,y){cx.drawImage(sp,Math.round(x-sp.w/2),Math.round(y-sp.h/2))}
@@ -609,22 +703,34 @@ function drawCoinItem(d){
 function drawDealer(x,y,f){blitImg(img.dealer,x,y);if(f){cx.fillStyle='rgba(255,255,255,.6)';cx.fillRect(Math.round(x)-9,Math.round(y)-12,18,24)}}
 
 /* ---------- 背景：太空 ---------- */
-let stars=[],far=[];
-function initBg(){stars=Array.from({length:60},()=>({x:Math.random()*W|0,y:Math.random()*H|0,v:Math.random()*18+8,b:Math.random()<.3}));far=Array.from({length:25},()=>({x:Math.random()*W|0,y:Math.random()*H|0,v:3}))}
+let stars=[],far=[],neb=[],runes=[];
+function initBg(){neb=Array.from({length:6},()=>({x:Math.random()*W|0,y:Math.random()*H|0,r:30+Math.random()*40|0,v:4+Math.random()*6}));runes=Array.from({length:14},()=>({x:Math.random()*W|0,y:Math.random()*H|0,v:10+Math.random()*14}));stars=Array.from({length:60},()=>({x:Math.random()*W|0,y:Math.random()*H|0,v:Math.random()*18+8,b:Math.random()<.3}));far=Array.from({length:25},()=>({x:Math.random()*W|0,y:Math.random()*H|0,v:3}))}
 function circle(x,y,r,col){cx.fillStyle=col;for(let yy=-r;yy<=r;yy++){const w=Math.sqrt(r*r-yy*yy)|0;cx.fillRect(x-w,y+yy,w*2,1)}}
 const BG={1:['#0A0720','#14103A','#4A3F7A'],2:['#1A0A1E','#2A1030','#6A3A5A'],3:['#061420','#0A2030','#2A5A6A'],4:['#1A0E08','#2A1810','#6A4A2A'],5:['#08141A','#0A2A26','#2A6A5A'],6:['#050310','#0A0618','#2A2040'],7:['#0E1A3A','#1A2E5A','#4A6A9A'],8:['#2A2A60','#5A4A8A','#B8A060']};
 function drawSpace(dt,prog,dark){
-  const lv=G?G.lvl:1,c=BG[lv]||BG[1],bright=lv>=7?(lv-6)/2:0;
+  const lv=G?G.lvl:1,my=!!(G&&G.myth),c=my?MYTH[lv].bg:(BG[lv]||BG[1]),bright=(!my&&lv>=7)?(lv-6)/2:0;
   const g=cx.createLinearGradient(0,0,0,H);g.addColorStop(0,c[0]);g.addColorStop(1,c[1]);cx.fillStyle=g;cx.fillRect(0,0,W,H);
   if(bright>0){cx.fillStyle=`rgba(255,240,176,${bright*.18})`;cx.fillRect(0,0,W,H)}
+  if(my){const M=MYTH[lv].col;cx.globalAlpha=.08;for(const b of neb){b.y+=b.v*dt;if(b.y-b.r>H){b.y=-b.r;b.x=Math.random()*W|0}circle(b.x,b.y|0,b.r,M)}
+    cx.globalAlpha=.4;cx.fillStyle=M;for(const r of runes){r.y+=r.v*dt;if(r.y>H){r.y=-6;r.x=Math.random()*W|0}const ry=r.y|0;cx.fillRect(r.x,ry,3,1);cx.fillRect(r.x+1,ry-2,1,5)}cx.globalAlpha=1}
   cx.fillStyle=c[2];for(const s of far){s.y+=s.v*dt;if(s.y>H){s.y=0;s.x=Math.random()*W|0}cx.fillRect(s.x,s.y|0,1,1)}
   for(const s of stars){s.y+=s.v*dt;if(s.y>H){s.y=0;s.x=Math.random()*W|0}cx.fillStyle=s.b?'#FFF6E0':'#8C86B8';cx.fillRect(s.x,s.y|0,s.b?2:1,s.b?2:1)}
   // 地球（起點）喺底、10K DOG 星喺頂：隨進度移動
+  if(my){if(lv===8&&!G.palaceGone)drawPalace();return}
   const ey=H+40-prog*420;if(prog<.3&&ey<H+60){circle(W/2,ey|0,60,'#1E4E8C');circle(W/2-18,ey-30|0,14,'#40D070');circle(W/2+22,ey-20|0,10,'#40D070');circle(W/2+5,ey-45|0,6,'#40D070')}
   const py=-60+prog*110,dim=1-dark*.8;if(py>-40){circle(W/2,py|0,26,`rgb(${248*dim|0},${200*dim|0},${56*dim|0})`);circle(W/2-8,py-6|0,5,`rgb(${255*dim|0},${240*dim|0},${176*dim|0})`);
     if(img.coinB&&img.coinB.complete){cx.globalAlpha=dim;cx.drawImage(img.coinB,W/2-9,py-9|0);cx.globalAlpha=1}
     cx.fillStyle='#FFF0B0';cx.font='7px "Press Start 2P",monospace';cx.textAlign='center';cx.fillText('10K DOG',W/2,py+38)}
 }
+function drawPalace(){const px=W/2,py=58,sh=G.cine>0?rnd(-2,2)|0:0;cx.save();cx.translate(sh,0);
+  cx.globalAlpha=.25;circle(px,py-20,70,'#FFE890');cx.globalAlpha=1;
+  cx.fillStyle='#E8DCC0';cx.fillRect(px-62,py+4,124,6);cx.fillStyle='#C8B890';cx.fillRect(px-66,py+10,132,4);
+  for(let i=0;i<6;i++){const x=px-55+i*22;cx.fillStyle='#F4ECD8';cx.fillRect(x-3,py-26,6,30);cx.fillStyle='#FFF8E8';cx.fillRect(x-4,py-28,8,3);cx.fillRect(x-4,py+2,8,3)}
+  cx.fillStyle='#F4ECD8';cx.fillRect(px-64,py-32,128,5);
+  cx.beginPath();cx.moveTo(px-68,py-32);cx.lineTo(px,py-52);cx.lineTo(px+68,py-32);cx.closePath();cx.fillStyle='#FFF3D0';cx.fill();
+  cx.fillStyle='#F8C838';cx.fillRect(px-3,py-46,6,6);
+  if(G.cine>0){cx.fillStyle='#000';for(let i=0;i<8;i++){cx.fillRect(px-60+i*16+(Math.sin(i*7)*5|0),py-30+(i%3)*10,2,12)}cx.fillStyle='#FF9A3A';cx.globalAlpha=.6;for(let i=0;i<4;i++)cx.fillRect(px-50+i*30,py-20,3,3);cx.globalAlpha=1}
+  cx.restore()}
 function drawHomeBg(dt){
   drawSpace(dt,0,0);
   // 主頁：遠處 10K DOG 星 + 地球
@@ -644,11 +750,12 @@ const pick=arr=>arr[Math.random()*arr.length|0];
 function newRun(){
   let mult=1;
   const D=diffOf(S.diff),J=jetOf(S.jet),hp=Math.max(1,3+S.up.hp+J.hp+D.life),dbg=/^#L(\d)(w?)$/.exec(location.hash);
-  G={J,D,p:{x:W/2,y:H-60,hp,max:hp,inv:1.5,ft:0},b:[],e:[],eb:[],d:[],fx:[],tx:[],buf:{},shield:0,
+  G={J,D,myth:S.mode==='myth',rings:[],zaps:[],cine:0,stage2:0,waveDone:false,palaceGone:0,p:{x:W/2,y:H-60,hp,max:hp,inv:1.5,ft:0},b:[],e:[],eb:[],d:[],fx:[],tx:[],buf:{},shield:0,
      score:0,coins:0,lvl:1,wt:0,st:1,boss:null,bossDone:false,warn:0,warned:false,mult,revived:false,t:0,banner:2.4,shake:0,candleT:2,freeze:0,flash:0,shinyGot:[],shinyOn:0,dealerT:rnd(4,9),dealerDone:false,portrait:0,planeT:6,sickleT:8,wallT:9,tycoonT:rnd(6,12),tycoonDone:false,surge:0,won:false,ult:0,ultOn:0,diff:1};
-  if(dbg){G.lvl=+dbg[1];if(dbg[2])G.weak=1}
+  if(dbg){G.lvl=+dbg[1];if(dbg[2]){G.weak=1;window.__dbg={get G(){return G}}}}
 }
-function nextLevel(){if(G.lvl>=LEVELS){win();return}G.lvl++;G.wt=0;G.st=1.2;G.banner=2.4;G.boss=null;G.bossDone=false;G.warned=false;G.warn=0;G.dealerT=rnd(3,8);G.dealerDone=false;G.planeT=5;G.sickleT=7;G.wallT=8;G.tycoonT=rnd(5,11);G.tycoonDone=false;G.surge=0}
+function grantMythJet(n){const k=MYTH[n].jet;if(!S.jets.includes(k)){S.jets.push(k);save();syncPlayer();floatText(W/2,H*.5,'奪得神器戰機：'+jetOf(k).name,'#FFF0B0',1);sfx.jackpot();G.flash=.5}else floatText(W/2,H*.5,'神器戰機 '+jetOf(k).name+'（已擁有）','#A89CD8',1)}
+function nextLevel(){if(G.myth)grantMythJet(G.lvl);if(G.lvl>=LEVELS){win();return}G.lvl++;G.waveDone=false;G.stage2=0;G.zaps=[];G.wt=0;G.st=1.2;G.banner=2.4;G.boss=null;G.bossDone=false;G.warned=false;G.warn=0;G.dealerT=rnd(3,8);G.dealerDone=false;G.planeT=5;G.sickleT=7;G.wallT=8;G.tycoonT=rnd(5,11);G.tycoonDone=false;G.surge=0}
 const has=k=>G.buf[k]>0;
 function fireInt(){let f=(.2-S.up.rate*.014)/G.J.rate;if(has('rapid'))f*=.5;if(has('moon'))f*=.75;return f}
 const PAT=[[0],[-4,4],[-6,0,6],[-8,-3,3,8],[-9,-4,0,4,9],[-11,-5,0,5,11]];
@@ -658,8 +765,9 @@ function shoot(){
   if(has('spread')){for(const a of[-1,1]){G.b.push({x:p.x,y:p.y-12,vx:a*110,vy:-290,dmg,g:1});G.b.push({x:p.x,y:p.y-12,vx:a*60,vy:-310,dmg,g:1})}}
 }
 function mkE(o){if(o.t!=='dealer'&&o.t!=='wall'){o.hp*=G.D.hp*(1+(G.lvl-1)*.14);if(o.vy)o.vy*=G.D.sp;if(o.vx)o.vx*=G.D.sp}o.max=o.hp;o.hf=0;G.e.push(o);const k=o.t==='boss'?o.kind:o.t;if(!S.seen.includes(k)){S.seen.push(k);save()}return o}
+function spawnSpirit(){const n=G.lvl;mkE({t:'spirit',x:rnd(12,W-12),y:-12,r:5,hp:2+n*.4,vy:40+n*4,ph:rnd(0,6),score:15,coin:1,col:GODC[bossAt(n)]||MYTH[n].col})}
 function spawnEnemy(){
-  const n=G.lvl,r=Math.random(),x=rnd(12,W-12);
+  const n=G.lvl,r=Math.random(),x=rnd(12,W-12);if(G.myth&&r<.45){spawnSpirit();return}
   if(r<.38)mkE({t:'candle',x,y:-14,r:5,hp:1+n*.25,vy:70+n*6,score:10,coin:1});
   else if(r<.5&&n>=2)mkE({t:'wick',x,bx:x,y:-14,r:4,hp:1+n*.15,vy:110+n*9,ph:rnd(0,6),score:15,coin:1});
   else if(r<.5+Math.min(.2,.04*(n-1))&&n>=2)mkE({t:'bomb',x,bx:x,y:-20,r:9,hp:6+n*2,vy:14+n,ph:rnd(0,6),ft:rnd(1.5,2.5),score:60,coin:5});
@@ -683,11 +791,13 @@ function spawnGas(){const dir=Math.random()<.5?1:-1;mkE({t:'gas',x:dir>0?-10:W+1
 function spawnSickle(){const dir=Math.random()<.5?1:-1;mkE({t:'sickle',x:dir>0?-20:W+20,y:rnd(H*.35,H*.7),r:7,hp:4+G.lvl,vx:dir*(70+G.lvl*6),rot:0,score:70,coin:3})}
 function spawnDealer(){const n=G.lvl,sp=(70+n*22);mkE({t:'dealer',x:rnd(30,W-30),y:-20,r:8,hp:1e9,vx:sp*(Math.random()<.5?1:-1),vy:sp*.6,life:9+n,score:0,coin:0})}
 function spawnBoss(kind){
-  const n=G.lvl;G.boss=mkE({t:'boss',kind,x:W/2,y:-50,r:kind==='ninja'?22:kind==='mars'?11:kind==='emperor'?12:24,hp:(kind==='mars'?120:150)+n*95+(kind==='crab'?120:0)+(kind==='ninja'?80:0)+(kind==='emperor'?420:0),vy:0,ft:2,pat:0,score:400*n,coin:0,phase:0,inv:false,st:0,tt:0});
+  const n=G.lvl,god=!!GODS[kind];G.boss=mkE({t:'boss',kind,x:W/2,y:-50,r:god?14:kind==='ninja'?22:kind==='mars'?11:kind==='emperor'?12:24,hp:(god?170+n*105+(kind==='zeus'?520:kind==='hera'?160:0):(kind==='mars'?120:150)+n*95+(kind==='crab'?120:0)+(kind==='ninja'?80:0)+(kind==='emperor'?420:0)),vy:0,ft:2,pat:0,score:400*n,coin:0,phase:0,inv:false,st:0,tt:0});
   if(G.weak){G.boss.hp=8;G.boss.max=8}
 }
 function eShot(x,y,ang,sp,k){sp*=G.D.bul*(1+(G.lvl-1)*.05);G.eb.push({x,y,vx:Math.cos(ang)*sp,vy:Math.sin(ang)*sp,k})}
 function aim(e){return Math.atan2(G.p.y-e.y,G.p.x-e.x)}
+function ringFx(x,y,col,max){G.rings.push({x,y,r:2,max,col,life:.45,ml:.45})}
+function zap(x){G.zaps.push({x:Math.min(Math.max(x,8),W-8),t:0,warn:.8,dur:.3});beep(1400,.15,'square',.03,400)}
 function burst(x,y,col,n=10,sp=90){for(let i=0;i<n;i++){const a=rnd(0,Math.PI*2),v=rnd(sp*.3,sp);G.fx.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:rnd(.3,.7),max:.7,col})}}
 function floatText(x,y,txt,col,big){G.tx.push({x,y,txt,col,life:big?1.6:.9,big})}
 function drop(k,x,y,c){G.d.push({k,x,y,vx:rnd(-35,35),vy:rnd(-70,-15),c,t:0})}
@@ -705,12 +815,14 @@ function lootFrom(e){
 }
 function kill(e){
   G.score+=Math.round(e.score*G.D.score);
-  if(e.t==='boss'){
-    burst(e.x,e.y,'#E8453C',40,200);burst(e.x,e.y,'#F8C838',30,160);sfx.big();G.shake=.6;
+  if(e.t==='boss'){const M=GODC[e.kind]||'#F8C838';
+    burst(e.x,e.y,'#E8453C',40,200);burst(e.x,e.y,M,30,160);burst(e.x,e.y,'#fff',20,240);ringFx(e.x,e.y,M,70);ringFx(e.x,e.y,'#fff',40);sfx.big();G.shake=.7;G.flash=Math.max(G.flash,.4);G.freeze=.22;G.eb=[];G.zaps=[];
     for(let i=0;i<25;i++)drop('coinB',e.x+rnd(-24,24),e.y+rnd(-16,16));
     lootFrom(e);floatText(e.x,e.y,MONS.find(m=>m.k===e.kind).name.split('（')[0]+' 已擊退！','#40D070',1);G.bossDone=true;
-    const dd=DIALOG[e.kind+'_dead'];setTimeout(()=>{if(G&&G.bossDone&&mode==='play'){if(dd)dialog(dd,nextLevel);else nextLevel()}},1400);
-  }else{burst(e.x,e.y,e.t==='candle'||e.t==='wick'?'#E8453C':'#F2B0A0',e.t==='bomb'?18:8,e.t==='bomb'?140:90);sfx.pop();lootFrom(e);
+    if(e.kind==='zeus'){G.cine=5;G.ck=0;floatText(W/2,H*.3,'神殿……在崩塌！','#FFE890',1);return}
+    const dd=DIALOG[e.kind+'_dead'],after=(G.myth&&e.kind==='hera')?()=>{G.stage2=1;G.bossDone=false;G.warned=false;G.boss=null}:nextLevel;
+    setTimeout(()=>{if(G&&G.bossDone&&mode==='play'){if(dd)dialog(dd,after);else after()}},1400);
+  }else{const kc=e.t==='spirit'?e.col:e.t==='candle'||e.t==='wick'?'#E8453C':'#F2B0A0';burst(e.x,e.y,kc,e.t==='bomb'?18:8,e.t==='bomb'?140:90);ringFx(e.x,e.y,kc,e.t==='bomb'||e.t==='plane'?26:14);sfx.pop();lootFrom(e);
     if(e.t==='tycoon'){G.surge=0;floatText(e.x,e.y,'推文已刪除','#40D070',1)}
     if(e.t==='trojan')for(let i=-1;i<=1;i++)mkE({t:'candle',x:e.x+i*12,y:e.y,r:5,hp:1,vy:90,score:10,coin:1})}
 }
@@ -762,8 +874,23 @@ function applyCoin(d){
     G.score+=1000;floatText(W/2,H*.45,'✦ '+c.t+' GET ✦','#FFF0B0',1);
   }
 }
+function fxUpdate(dt){
+  for(const f of G.fx){f.x+=f.vx*dt;f.y+=f.vy*dt;f.vx*=.94;f.vy*=.94;f.life-=dt}G.fx=G.fx.filter(f=>f.life>0);
+  for(const t of G.tx){t.y-=(t.big?8:20)*dt;t.life-=dt}G.tx=G.tx.filter(t=>t.life>0);
+  for(const r of G.rings){r.r+=(r.max-r.r)*Math.min(1,dt*9);r.life-=dt}G.rings=G.rings.filter(r=>r.life>0);
+}
+function cineUpdate(dt){G.cine-=dt;G.shake=.6;G.t+=dt;const px=W/2,py=40;G.flash=Math.max(0,G.flash-dt*2);
+  if(Math.random()<.6)burst(px+rnd(-60,60),py+rnd(-25,25),pick(['#FFE890','#fff','#FF9A3A']),6,140);
+  G.ck-=dt;if(G.ck<=0){G.ck=.55;G.flash=Math.max(G.flash,.3);sfx.big();ringFx(px+rnd(-50,50),py+rnd(-20,20),'#FFE890',50)}
+  if(G.cine<=0){G.palaceGone=1;G.flash=1;G.shake=1;sfx.thunder();sfx.jackpot();
+    for(let i=0;i<6;i++)burst(px+rnd(-60,60),py+rnd(-20,30),pick(['#FFE890','#fff','#FF6A3A','#C8B070']),30,280);ringFx(px,py,'#fff',150);ringFx(px,py,'#FFE890',110);
+    for(let i=0;i<50;i++)G.fx.push({x:px+rnd(-64,64),y:py+rnd(-30,20),vx:rnd(-170,170),vy:rnd(-80,240),life:rnd(.9,1.8),max:1.8,col:pick(['#C8B070','#F4ECD8','#8A7A40','#fff']),big:1});
+    setTimeout(()=>{if(G&&mode==='play')dialog(DIALOG.zeus_dead,nextLevel)},1000)}
+  fxUpdate(dt)}
 function update(dt){
-  const p=G.p;G.t+=dt;
+  const p=G.p;
+  if(G.cine>0){cineUpdate(dt);return}
+  G.t+=dt;
   if(G.freeze>0){G.freeze-=dt;G.flash=Math.max(0,G.flash-dt*.8);return}
   G.flash=Math.max(0,G.flash-dt*2);
   for(const k in G.buf)if(G.buf[k]>0)G.buf[k]-=dt;
@@ -779,38 +906,39 @@ function update(dt){
   p.inv=Math.max(0,p.inv-dt);G.banner-=dt;G.shake=Math.max(0,G.shake-dt);
   p.ft-=dt;if(p.ft<=0){p.ft=fireInt();shoot()}
 
-  const n=G.lvl,bossKind=BOSS_AT[n];
-  if(!bossKind){
+  const n=G.lvl,bossKind=bossAt(n),wEnd=G.myth?14:20;
+  if(!bossKind||(G.myth&&!G.waveDone)){
     G.wt+=dt;G.st-=dt;
-    if(G.st<=0&&G.wt<20){spawnEnemy();G.st=Math.max(.32,1.4-n*.13)*rnd(.75,1.3)/G.diff/G.D.rate}
-    if(n>=5&&G.wt<20){G.planeT-=dt;if(G.planeT<=0){spawnPlane();G.planeT=rnd(5,9)-n*.3}}
-    if(n>=5&&!G.tycoonDone&&G.wt<14){G.tycoonT-=dt;if(G.tycoonT<=0){G.tycoonDone=true;if(Math.random()<(G.D.k==='a9'?1:.75)){mkE({t:'tycoon',x:W/2,y:-16,r:8,hp:14+n*3,vy:30,tw:2,score:150,coin:6});floatText(W/2,H*.28,'關稅特使現身！','#FFF',1);sfx.bad()}}}
+    if(G.st<=0&&G.wt<wEnd){spawnEnemy();G.st=Math.max(.32,1.4-n*.13)*rnd(.75,1.3)/G.diff/G.D.rate}
+    if(n>=5&&G.wt<wEnd){G.planeT-=dt;if(G.planeT<=0){spawnPlane();G.planeT=rnd(5,9)-n*.3}}
+    if(!G.myth&&n>=5&&!G.tycoonDone&&G.wt<14){G.tycoonT-=dt;if(G.tycoonT<=0){G.tycoonDone=true;if(Math.random()<(G.D.k==='a9'?1:.75)){mkE({t:'tycoon',x:W/2,y:-16,r:8,hp:14+n*3,vy:30,tw:2,score:150,coin:6});floatText(W/2,H*.28,'關稅特使現身！','#FFF',1);sfx.bad()}}}
     if(G.surge>0){G.surge-=dt;G.st-=dt*1.6}
-    if(n>=4&&G.wt<20){G.wallT-=dt;if(G.wallT<=0){spawnWall();G.wallT=rnd(10,14)}}
-    if(n>=6&&G.wt<20){G.sickleT-=dt;if(G.sickleT<=0){spawnSickle();G.sickleT=rnd(6,10)-n*.3}}
-    if(G.wt>=20&&!G.e.some(e=>e.t!=='dealer'))nextLevel();
+    if(!G.myth&&n>=4&&G.wt<wEnd){G.wallT-=dt;if(G.wallT<=0){spawnWall();G.wallT=rnd(10,14)}}
+    if(n>=6&&G.wt<wEnd){G.sickleT-=dt;if(G.sickleT<=0){spawnSickle();G.sickleT=rnd(6,10)-n*.3}}
+    if(G.wt>=wEnd&&!G.e.some(e=>e.t!=='dealer')){if(G.myth){G.waveDone=true;G.candleT=2}else nextLevel()}
   }else{
     if(!G.boss&&!G.bossDone){
       if(!G.warned){G.warned=true;G.warn=2.6;G.sirenT=0}
       if(G.warn>0){G.warn-=dt;G.sirenT-=dt;if(G.sirenT<=0){sfx.siren();G.sirenT=.6}if(G.warn<=0){spawnBoss(bossKind);G.boss.introDlg=1;if(bossKind==='mars')G.boss.inv=true}}
     }
-    G.candleT-=dt;if(G.boss&&G.candleT<=0){G.candleT=rnd(1.4,2.6);mkE({t:'candle',x:rnd(12,W-12),y:-14,r:5,hp:1,vy:110,score:10,coin:1})}
+    G.candleT-=dt;if(G.boss&&G.candleT<=0){G.candleT=rnd(1.4,2.6);if(G.myth)spawnSpirit();else mkE({t:'candle',x:rnd(12,W-12),y:-14,r:5,hp:1,vy:110,score:10,coin:1})}
   }
   // 無敵莊家：L2 起每關隨機出一次
-  if(n>=3&&!G.dealerDone&&!bossKind){G.dealerT-=dt;if(G.dealerT<=0){G.dealerDone=true;if(Math.random()<(G.D.k==='a9'?1:.7)){spawnDealer();G.portrait=2.2;floatText(W/2,H*.28,'莊家降臨！全部怪物暫時射不死','#FFF',1);sfx.bad();G.shake=.3}}}
+  if(n>=3&&!G.myth&&!G.dealerDone&&!bossKind){G.dealerT-=dt;if(G.dealerT<=0){G.dealerDone=true;if(Math.random()<(G.D.k==='a9'?1:.7)){spawnDealer();G.portrait=2.2;floatText(W/2,H*.28,'莊家降臨！全部怪物暫時射不死','#FFF',1);sfx.bad();G.shake=.3}}}
   if(G.portrait>0)G.portrait-=dt;
 
   const homing=G.ultOn>0&&G.ultKind==='homing';
   for(const b of G.b){
     if(homing){let best=null,bd=1e9;for(const e of G.e){if(e.t==='dealer'||e.t==='wall'||e.y>b.y+40)continue;const d2=(e.x-b.x)**2+(e.y-b.y)**2;if(d2<bd){bd=d2;best=e}}
       if(best){const ang=Math.atan2(best.y-b.y,best.x-b.x),sp=340;b.vx+=(Math.cos(ang)*sp-b.vx)*Math.min(1,dt*8);b.vy+=(Math.sin(ang)*sp-b.vy)*Math.min(1,dt*8)}}
-    b.x+=b.vx*dt;b.y+=b.vy*dt}
+    b.x+=b.vx*dt;b.y+=b.vy*dt;if(Math.random()<.3)G.fx.push({x:b.x,y:b.y+4,vx:0,vy:25,life:.14,max:.14,col:b.g?'#40D070':'#FFD060'})}
   G.b=G.b.filter(b=>b.y>-10&&b.x>-10&&b.x<W+10&&!b.dead);
 
   const ufz=G.ultOn>0&&G.ultKind==='freeze',edt=(has('freeze')?dt*.4:dt)*(ufz?.15:1),curse=G.e.some(e=>e.t==='dealer');
   for(const e of G.e){
     e.hf=Math.max(0,e.hf-dt);const dt0=dt;dt=e.t==='dealer'?dt0:edt;
     if(e.t==='candle')e.y+=e.vy*dt;
+    else if(e.t==='spirit'){e.y+=e.vy*dt;e.x+=Math.sin(G.t*2+e.ph)*24*dt+(p.x-e.x)*dt*.5;if(Math.random()<.3)G.fx.push({x:e.x+rnd(-3,3),y:e.y+rnd(-3,3),vx:0,vy:-12,life:.3,max:.3,col:e.col})}
     else if(e.t==='wick'){e.y+=e.vy*dt;e.x=e.bx+Math.sin(G.t*6+e.ph)*10}
     else if(e.t==='fud'){e.y+=e.vy*dt;e.x=e.bx+Math.sin(G.t*2+e.ph)*e.amp;e.ft-=dt;if(e.ft<=0&&e.y>0&&e.y<H*.6){eShot(e.x,e.y+5,aim(e),60+n*4);e.ft=rnd(2.4,4)-Math.min(1.2,n*.12)}}
     else if(e.t==='bomb'){e.y+=e.vy*dt;e.x=e.bx+Math.sin(G.t*1.2+e.ph)*15;e.ft-=dt;if(e.ft<=0&&e.y>0&&e.y<H*.7){if(n>=4){for(let i=-1;i<=1;i++)eShot(e.x,e.y+10,Math.PI/2+i*.25,60+n*3)}else eShot(e.x,e.y+10,aim(e),65);e.ft=rnd(2,3)}}
@@ -835,15 +963,20 @@ function update(dt){
         if(e.t==='wall'||(e.t==='boss'&&e.inv)){b.dead=true;e.hf=.05;continue}
         if(e.t==='dealer'||curse){b.dead=true;e.hf=.08;eShot(b.x,b.y,aim(e)+rnd(-.3,.3),e.t==='dealer'?150:110);sfx.bounce();continue}
         if(!has('pierce'))b.dead=true;else{if(b.hitId===e)continue;b.hitId=e}
-        e.hp-=b.dmg;e.hf=.07;if(e.hp<=0&&!e.dead){e.dead=true;kill(e);break}}}
+        e.hp-=b.dmg;e.hf=.07;if(e.t==='boss')G.fx.push({x:b.x,y:b.y,vx:rnd(-70,70),vy:rnd(-90,10),life:.22,max:.22,col:'#FFF0B0'});if(e.hp<=0&&!e.dead){e.dead=true;kill(e);break}}}
     if(!e.dead){const dx=p.x-e.x,dy=p.y-e.y,rr=e.r+6;if(dx*dx+dy*dy<rr*rr){hurt();if(e.t!=='boss'&&e.t!=='dealer'&&e.t!=='wall'){e.dead=true;burst(e.x,e.y,'#E8453C',8,80)}}}
     if(mode!=='play')return;
   }
   G.e=G.e.filter(e=>!e.dead&&e.y<H+30);
   if(G.boss&&G.boss.dead)G.boss=null;
 
-  for(const b of G.eb){const bdt=ufz?dt*.15:dt;b.x+=b.vx*bdt;b.y+=b.vy*bdt;
-    if(b.k==='gift'){b.fuse-=bdt;if(b.fuse<=0){b.dead=true;for(let i=0;i<8;i++)eShot(b.x,b.y,i/8*Math.PI*2,80);burst(b.x,b.y,'#40D070',8,80);continue}}const dx=b.x-p.x,dy=b.y-p.y;if(dx*dx+dy*dy<36){b.dead=true;hurt();if(mode!=='play')return}}
+  for(const b of G.eb){const bdt=ufz?dt*.15:dt;
+    if(b.k==='soul'||b.k==='heart'){const a=Math.atan2(p.y-b.y,p.x-b.x),sp=Math.hypot(b.vx,b.vy),st=b.k==='soul'?1.4:.7;b.vx+=(Math.cos(a)*sp-b.vx)*Math.min(1,bdt*st);b.vy+=(Math.sin(a)*sp-b.vy)*Math.min(1,bdt*st)}
+    if(b.k==='hammer'){if(!b.ret&&b.y>H-40)b.ret=1;if(b.ret){const o=b.own;if(o&&o.hp>0&&!o.dead){const a=Math.atan2(o.y-b.y,o.x-b.x);b.vx=Math.cos(a)*190;b.vy=Math.sin(a)*190;if(Math.hypot(o.x-b.x,o.y-b.y)<12)b.dead=true}else b.dead=true}if(Math.random()<.5)G.fx.push({x:b.x,y:b.y,vx:0,vy:0,life:.2,max:.2,col:'#C0C0C0'})}
+    if(b.k==='bolt'&&Math.random()<.4)G.fx.push({x:b.x+rnd(-2,2),y:b.y,vx:0,vy:0,life:.12,max:.12,col:'#FFE040'});
+    b.x+=b.vx*bdt;b.y+=b.vy*bdt;
+    if(b.k==='gift'){b.fuse-=bdt;if(b.fuse<=0){b.dead=true;for(let i=0;i<8;i++)eShot(b.x,b.y,i/8*Math.PI*2,80);burst(b.x,b.y,'#40D070',8,80);continue}}const dx=b.x-p.x,dy=b.y-p.y;if(dx*dx+dy*dy<(b.k==='hammer'?64:36)){b.dead=true;hurt();if(mode!=='play')return}}
+  for(const z of G.zaps){z.t+=dt;if(z.t>=z.warn&&!z.hit){z.hit=1;G.flash=Math.max(G.flash,.22);G.shake=Math.max(G.shake,.3);sfx.thunder();burst(z.x,rnd(H*.3,H*.7),'#FFE040',12,120)}if(z.t>=z.warn&&z.t<z.warn+z.dur&&Math.abs(p.x-z.x)<9){hurt();if(mode!=='play')return}}G.zaps=G.zaps.filter(z=>z.t<z.warn+z.dur);
   G.eb=G.eb.filter(b=>!b.dead&&b.y<H+10&&b.y>-20&&b.x>-10&&b.x<W+10);
 
   const mag=(30+S.up.magnet*26)*G.J.mag*(has('magnet')?2.5:1);
@@ -861,13 +994,13 @@ function update(dt){
   }
   G.d=G.d.filter(d=>!d.dead&&d.y<H+20);
   if(!G.d.some(d=>d.k==='shiny'))G.shinyOn=0;
-  for(const f of G.fx){f.x+=f.vx*dt;f.y+=f.vy*dt;f.vx*=.94;f.vy*=.94;f.life-=dt}G.fx=G.fx.filter(f=>f.life>0);
-  for(const t of G.tx){t.y-=(t.big?8:20)*dt;t.life-=dt}G.tx=G.tx.filter(t=>t.life>0);
+  fxUpdate(dt);
 }
 function bossAI(e,dt,n){
   const top=65;if(e.kind!=='ninja'||e.st===0){if(e.y<top&&!(e.kind==='ninja'&&e.st!==0)){e.y+=35*dt;return}}
   if(e.introDlg){e.introDlg=0;const d=DIALOG[e.kind+'_intro'];if(d){dialog(d,e.kind==='mars'?()=>{e.friendly=4}:null);return}}
   e.ft-=dt;const c=n/3|0;
+  if(GODS[e.kind]){godAI(e,dt,n,top);return}
   if(e.kind==='bear'){e.x=W/2+Math.sin(G.t*.7)*(W/2-36);
     if(e.ft<=0){const pat=e.pat++%3;
       if(pat===0){const k=7;for(let i=0;i<k;i++)eShot(e.x,e.y+18,Math.PI/2+(i-(k-1)/2)*.17,80+n*2)}
@@ -919,6 +1052,59 @@ function bossAI(e,dt,n){
       else{const k=14;for(let i=0;i<k;i++)eShot(e.x,e.y,Math.PI*(.1+i/(k-1)*.8),80+n*2);floatText(e.x,e.y+26,'爆倉！','#E8453C')}
       e.ft=.9}}
 }
+function godAI(e,dt,n,top){
+  const p=G.p,hpF=e.hp/e.max,k=e.kind,M=GODC[k];
+  if(k==='venus'){e.x=W/2+Math.sin(G.t*.8)*(W/2-40);e.y=top+Math.sin(G.t*1.5)*10;
+    if(e.ft<=0){const pat=e.pat++%3;
+      if(pat===0){for(let i=0;i<10;i++)eShot(e.x,e.y+8,Math.PI/2+(i-4.5)*.22,70+n*2,'heart')}
+      else if(pat===1){for(let i=0;i<2;i++)mkE({t:'swarm',x:e.x+(i?20:-20),y:e.y,r:4,hp:2,vy:80,score:8,coin:1});floatText(e.x,e.y+24,'白鴿，去吧','#FF7AB8')}
+      else{const a=aim(e);for(let i=-1;i<=1;i++)eShot(e.x,e.y+8,a+i*.3,90+n*2,'heart')}
+      e.ft=hpF<.5?.9:1.3}
+    if(hpF<.5){e.charmT=(e.charmT||3)-dt;if(e.charmT<=0){e.charmT=6;G.buf.slow=3;floatText(e.x,e.y+24,'魅惑：愛的重力','#FF7AB8',1);sfx.bad();ringFx(e.x,e.y,M,70)}}}
+  else if(k==='hermes'){
+    if(e.dash){e.dash.t+=dt;e.y=e.dash.y;e.x+=e.dash.dir*430*dt;if(Math.random()<.7)G.fx.push({x:e.x,y:e.y+rnd(-6,6),vx:0,vy:0,life:.3,max:.3,col:M});if(e.x<-30||e.x>W+30){e.dash=null;e.dashT=5;e.x=W/2;e.y=top;ringFx(e.x,e.y,M,30)}return}
+    e.tp=(e.tp||1.6)-dt;if(e.tp<=0){e.tp=hpF<.5?1:1.6;burst(e.x,e.y,M,10,120);e.x=rnd(30,W-30);e.y=top+rnd(0,30);burst(e.x,e.y,M,10,120);ringFx(e.x,e.y,M,24);const a=aim(e);for(let i=0;i<3;i++)setTimeout(()=>{if(G&&e.hp>0&&mode==='play')eShot(e.x,e.y+8,a,200+n*4,'bolt')},i*90)}
+    if(hpF<.5){e.dashT=(e.dashT||4)-dt;if(e.dashT<=0){const dir=e.x<W/2?1:-1;e.dash={t:0,y:Math.max(top,p.y),dir};e.x=dir>0?-20:W+20;floatText(W/2,e.dash.y-16,'神速衝刺！',M,1);sfx.siren()}}}
+  else if(k==='poseidon'){e.x=W/2+Math.sin(G.t*.5)*(W/2-40);e.y=top;
+    if(e.ft<=0){const pat=e.pat++%3;
+      if(pat<2){const gap=rnd(24,W-24);for(let x=8;x<W;x+=14){if(Math.abs(x-gap)<22)continue;G.eb.push({x,y:e.y+10,vx:0,vy:(hpF<.4?110:75)+n*3,k:'wave'})}floatText(e.x,e.y+24,'海嘯！','#60A0FF');ringFx(e.x,e.y,M,40)}
+      else{const a=aim(e);for(let i=-1;i<=1;i++)eShot(e.x,e.y+8,a+i*.12,140+n*3,'spear')}
+      e.ft=hpF<.4?1.5:2.2}}
+  else if(k==='thor'){e.x=W/2+Math.sin(G.t*.9)*(W/2-40);e.y=top+Math.sin(G.t*2)*8;
+    if(e.ft<=0){const pat=e.pat++%2;
+      if(pat===0){zap(p.x);for(let i=0;i<(hpF<.5?3:2);i++)zap(rnd(15,W-15));floatText(e.x,e.y+24,'雷擊！','#FFE040')}
+      else{const a=aim(e);G.eb.push({x:e.x,y:e.y+10,vx:Math.cos(a)*150,vy:Math.sin(a)*150,k:'hammer',ret:0,own:e});floatText(e.x,e.y+24,'雷錘！','#C0C0C0')}
+      e.ft=hpF<.5?1.3:1.9}}
+  else if(k==='ares'){e.x+=Math.sign(Math.sin(G.t*1.4))*110*dt;e.x=Math.min(Math.max(e.x,30),W-30);e.y=top;
+    e.sm=(e.sm||3)-dt;if(e.sm<=0){e.sm=hpF<.5?3.5:5;for(let i=0;i<4;i++)mkE({t:'swarm',x:rnd(20,W-20),y:-14-i*10,r:4,hp:2+n*.3,vy:70,score:8,coin:1});floatText(e.x,e.y+24,'軍團，衝鋒！','#FF3A3A',1)}
+    if(e.ft<=0){const a=aim(e);for(let i=-2;i<=2;i++)eShot(e.x,e.y+8,a+i*.16,120+n*3,'fire');e.ft=hpF<.5?.45:.8}
+    if(hpF<.5&&!e.rage){e.rage=1;floatText(e.x,e.y+24,'狂暴！','#FF3A3A',1);G.shake=.4;sfx.siren();ringFx(e.x,e.y,M,80)}}
+  else if(k==='hades'){e.x=W/2+Math.sin(G.t*.6)*(W/2-44);e.y=top+Math.sin(G.t)*12;
+    e.dk=(e.dk||4)-dt;if(e.dk<=0){e.dk=8;G.buf.dark=3.5;floatText(e.x,e.y+24,'冥界之霧','#B040FF',1);sfx.bad();ringFx(e.x,e.y,M,90)}
+    if(e.ft<=0){const pat=e.pat++%3;
+      if(pat<2){const kk=hpF<.5?10:7,o=rnd(0,1);for(let i=0;i<kk;i++)eShot(e.x,e.y,o+i/kk*Math.PI*2,55,'soul')}
+      else{for(let i=0;i<2;i++)mkE({t:'fud',x:rnd(20,W-20),bx:rnd(20,W-20),y:-12,r:7,hp:3+n*.5,vy:28,ph:rnd(0,6),amp:20,ft:1.6,score:20,coin:2});floatText(e.x,e.y+24,'亡魂，起來','#B040FF')}
+      e.ft=hpF<.5?1.1:1.6}}
+  else if(k==='athena'){e.x=W/2+Math.sin(G.t*.7)*(W/2-40);e.y=top;
+    e.ag=(e.ag||0)-dt;if(e.ag<=0){e.aegis=!e.aegis;e.ag=e.aegis?2.5:4;if(e.aegis){floatText(e.x,e.y+24,'神盾防禦','#E8C860');ringFx(e.x,e.y,M,30)}else floatText(e.x,e.y+24,'收盾了，快打！','#40D070')}e.inv=!!e.aegis;
+    if(e.ft<=0){const pat=e.pat++%3;
+      if(pat===0){const a=aim(e);for(let i=-3;i<=3;i++)eShot(e.x,e.y+8,a+i*.14,95+n*2,'feather')}
+      else if(pat===1&&hpF<.5){for(let i=0;i<6;i++)G.eb.push({x:rnd(10,W-10),y:-6,vx:0,vy:150+n*4,k:'spear'});floatText(W/2,H*.2,'長槍之雨','#E8C860')}
+      else{for(let i=0;i<2;i++)mkE({t:'swarm',x:e.x+(i?22:-22),y:e.y,r:4,hp:3,vy:75,score:8,coin:1})}
+      e.ft=1.2}}
+  else if(k==='hera'){e.x=W/2+Math.sin(G.t*.6)*(W/2-40);e.y=top+Math.sin(G.t*1.3)*8;
+    if(e.ft<=0){const pat=e.pat++%3;
+      if(pat===0){e.sw=(e.sw||0)+.6;for(let i=0;i<9;i++)eShot(e.x,e.y+6,Math.PI/2+(i-4)*.18+Math.sin(e.sw)*.45,85+n*2,'feather')}
+      else if(pat===1){for(let i=0;i<2;i++)mkE({t:'swarm',x:e.x+(i?24:-24),y:e.y,r:4,hp:3,vy:75,score:8,coin:1});floatText(e.x,e.y+24,'孔雀，去！','#40E0C0')}
+      else{const a=aim(e);for(let i=-2;i<=2;i++)eShot(e.x,e.y+8,a+i*.2,110,'feather');if(hpF<.5){const kk=12,o=rnd(0,1);for(let i=0;i<kk;i++)eShot(e.x,e.y,o+i/kk*Math.PI*2,70,'feather');floatText(e.x,e.y+24,'天后之怒！','#F8C838',1)}}
+      e.ft=hpF<.5?.8:1.2}}
+  else if(k==='zeus'){e.x=W/2+Math.sin(G.t*.7)*(W/2-40);e.y=top+Math.sin(G.t*1.6)*10;const ph=hpF>.66?0:hpF>.33?1:2;
+    if(ph!==(e.ph|0)){e.ph=ph;G.flash=.5;G.shake=.5;sfx.thunder();floatText(e.x,e.y+26,['','雷霆之怒！','諸神黃昏——'][ph],'#FFE890',1);ringFx(e.x,e.y,M,120)}
+    if(e.ft<=0){const pat=e.pat++%3;
+      if(ph===0){if(pat<2){zap(p.x);zap(rnd(15,W-15))}else{const kk=10,o=rnd(0,1);for(let i=0;i<kk;i++)eShot(e.x,e.y,o+i/kk*Math.PI*2,75,'bolt')}e.ft=1.5}
+      else if(ph===1){if(pat===0){spawnPlane();spawnPlane();floatText(e.x,e.y+26,'神鷹！','#FFE890')}else{const a=aim(e);for(let i=-1;i<=1;i++)eShot(e.x,e.y+8,a+i*.1,180+n*4,'bolt')}e.ft=1.1}
+      else{zap(p.x);zap(rnd(15,W-15));zap(rnd(15,W-15));const kk=12,o=rnd(0,1);for(let i=0;i<kk;i++)eShot(e.x,e.y,o+i/kk*Math.PI*2,80,'bolt');e.ft=.9}}}
+}
 function drawBoss(e){
   const x=Math.round(e.x),y=Math.round(e.y),f=e.hf>0;
   if(e.kind==='bear'){cx.save();cx.translate(x,y);cx.scale(3,3);cx.globalAlpha=f?.5:1;cx.drawImage(BEAR,-8,-7);cx.restore();
@@ -933,6 +1119,13 @@ function drawBoss(e){
     if(e.st===1&&Math.floor(G.t*8)%2){cx.fillStyle='#E8453C';cx.fillRect(x-3,y-40,6,14);cx.fillRect(x-3,y-23,6,5)}
     if(e.inv){cx.fillStyle='#8CC8FF';cx.font='7px "Press Start 2P",monospace';cx.textAlign='center';cx.fillText('MISS',x,y-30)}
     cx.globalAlpha=1}
+  else if(GODS[e.kind]){const M=GODC[e.kind],sp=GODSPR[e.kind];if(e.x<-100)return;
+    cx.globalAlpha=.16+Math.abs(Math.sin(G.t*3))*.12;circle(x,y,26,M);cx.globalAlpha=1;
+    if(e.kind==='hades'){cx.globalAlpha=.35;circle(x,y+8,32,'#1A0A30');cx.globalAlpha=1}
+    if(e.kind==='hera'){cx.globalAlpha=.5;for(let i=-4;i<=4;i++){cx.fillStyle=i%2?'#40E0C0':'#F8C838';cx.fillRect(x+i*7-1,y-30+Math.abs(i)*4,3,12)}cx.globalAlpha=1}
+    cx.globalAlpha=e.inv?.75:(f?.5:1);cx.save();cx.translate(x,y);cx.scale(2,2);cx.drawImage(sp,-8,-9);cx.restore();cx.globalAlpha=1;
+    if(e.inv){cx.strokeStyle=M;cx.lineWidth=2;cx.beginPath();cx.arc(x,y,22,0,7);cx.stroke();cx.lineWidth=1}
+    if((e.kind==='zeus'||e.kind==='thor')&&Math.random()<.35){cx.fillStyle='#fff';cx.fillRect(x+rnd(-28,28)|0,y+rnd(-28,28)|0,2,2)}}
   else if(e.kind==='whale'){cx.globalAlpha=f?.5:1;cx.fillStyle='#1E4E8C';
     cx.fillRect(x-30,y-10,52,22);cx.fillRect(x-36,y-4,8,12);cx.fillRect(x+18,y-18,6,10);cx.fillRect(x+22,y-24,10,8);cx.fillRect(x+22,y+2,10,8);
     cx.fillStyle='#8CC8FF';cx.fillRect(x-30,y+6,52,6);cx.fillStyle='#fff';cx.fillRect(x-22,y-4,5,5);cx.fillStyle='#000';cx.fillRect(x-20,y-3,2,2);
@@ -954,6 +1147,7 @@ function render(){
   for(const e of G.e){
     if(e.t==='boss')drawBoss(e);
     else if(e.t==='dealer')drawDealer(e.x,e.y,e.hf>0);
+    else if(e.t==='spirit'){const x=Math.round(e.x),y=Math.round(e.y);cx.globalAlpha=e.hf?.4:.85;circle(x,y,5,e.col);cx.globalAlpha=1;circle(x,y,3,'#fff');cx.fillStyle='#000';cx.fillRect(x-2,y-1,1,1);cx.fillRect(x+1,y-1,1,1)}
     else if(e.t==='sickle'){cx.save();cx.translate(Math.round(e.x),Math.round(e.y));cx.rotate(Math.round(e.rot/(Math.PI/2))*(Math.PI/2));cx.globalAlpha=e.hf?.5:1;cx.drawImage(SPR.sickle,-8,-7);cx.restore()}
     else{cx.globalAlpha=e.hf?.5:1;blit(SPR[e.t],e.x,e.y);cx.globalAlpha=1;
       if((e.t==='bomb'||e.t==='plane')&&e.hp<e.max){cx.fillStyle='#000';cx.fillRect(Math.round(e.x)-10,Math.round(e.y)-14,20,3);cx.fillStyle='#E8453C';cx.fillRect(Math.round(e.x)-10,Math.round(e.y)-14,Math.round(20*e.hp/e.max),3)}}
@@ -972,27 +1166,37 @@ function render(){
   }
   for(const b of G.eb){if(b.k==='gift'){const f=Math.floor(G.t*10)%2;cx.fillStyle=f?'#E8453C':'#40D070';cx.fillRect(Math.round(b.x)-4,Math.round(b.y)-4,8,8);cx.fillStyle='#FFF0B0';cx.fillRect(Math.round(b.x)-1,Math.round(b.y)-4,2,8);continue}
     if(b.k==='bomb'){cx.fillStyle='#2A2A3A';cx.fillRect(Math.round(b.x)-3,Math.round(b.y)-4,6,8);cx.fillStyle='#E8453C';cx.fillRect(Math.round(b.x)-1,Math.round(b.y)-2,2,4)}
-    else{cx.fillStyle='#E8453C';cx.fillRect(Math.round(b.x)-2,Math.round(b.y)-2,5,5);cx.fillStyle='#FFD0D8';cx.fillRect(Math.round(b.x),Math.round(b.y),1,1)}}
-  for(const f of G.fx){cx.globalAlpha=Math.max(0,f.life/f.max);cx.fillStyle=f.col;cx.fillRect(Math.round(f.x),Math.round(f.y),2,2)}
+    else{const x=Math.round(b.x),y=Math.round(b.y),c=BUL_COL[b.k];
+      if(c){cx.globalAlpha=.3;cx.fillStyle=c;cx.fillRect(x-4,y-4,9,9);cx.globalAlpha=1;
+        if(b.k==='hammer'){cx.fillStyle=c;cx.fillRect(x-5,y-4,10,7);cx.fillStyle='#8A6A30';cx.fillRect(x-1,y+3,2,6)}
+        else if(b.k==='heart'){cx.fillStyle=c;cx.fillRect(x-3,y-2,2,2);cx.fillRect(x+1,y-2,2,2);cx.fillRect(x-3,y,6,2);cx.fillRect(x-2,y+2,4,1);cx.fillRect(x-1,y+3,2,1)}
+        else if(b.k==='wave'){cx.fillStyle=c;cx.fillRect(x-6,y-2,12,4);cx.fillStyle='#fff';cx.fillRect(x-4,y-1,8,1)}
+        else{cx.fillStyle=c;cx.fillRect(x-2,y-2,5,5);cx.fillStyle='#fff';cx.fillRect(x,y,1,1)}}
+      else{cx.fillStyle='#E8453C';cx.fillRect(x-2,y-2,5,5);cx.fillStyle='#FFD0D8';cx.fillRect(x,y,1,1)}}}
+  for(const z of G.zaps){const x=Math.round(z.x);if(z.t<z.warn){if(Math.floor(G.t*12)%2){cx.fillStyle='rgba(255,224,64,.3)';cx.fillRect(x-1,0,2,H)}cx.fillStyle='#FFE040';cx.fillRect(x-5,Math.round(H*.15),10,2);cx.fillRect(x-1,Math.round(H*.15)-4,2,10)}
+    else{cx.fillStyle='rgba(255,240,180,.22)';cx.fillRect(x-8,0,16,H);let yy=0,xx=x;cx.fillStyle='#fff';while(yy<H){const nx=x+(rnd(-5,5)|0);cx.fillRect(Math.min(xx,nx),yy,Math.abs(nx-xx)+3,4);xx=nx;yy+=10}cx.fillStyle='#FFE040';cx.fillRect(x-1,0,3,H)}}
+  for(const r of G.rings){cx.globalAlpha=Math.max(0,r.life/r.ml);cx.strokeStyle=r.col;cx.lineWidth=2;cx.beginPath();cx.arc(Math.round(r.x),Math.round(r.y),r.r,0,7);cx.stroke()}cx.lineWidth=1;cx.globalAlpha=1;
+  for(const f of G.fx){cx.globalAlpha=Math.max(0,f.life/f.max);cx.fillStyle=f.col;const fs=f.big?3:2;cx.fillRect(Math.round(f.x),Math.round(f.y),fs,fs)}
   cx.globalAlpha=1;cx.textAlign='center';cx.textBaseline='middle';
   for(const t of G.tx){cx.globalAlpha=Math.min(1,t.life*2);cx.fillStyle='#000';cx.font=(t.big?'900 11px':'900 8px')+' "Noto Sans TC",sans-serif';cx.fillText(t.txt,Math.round(t.x)+1,Math.round(t.y)+1);cx.fillStyle=t.col;cx.fillText(t.txt,Math.round(t.x),Math.round(t.y))}
   cx.globalAlpha=1;cx.restore();
   if(has('narrow')){cx.fillStyle='rgba(0,0,0,.85)';const r=52;cx.fillRect(0,0,W,Math.max(0,p.y-r));cx.fillRect(0,p.y+r,W,H);cx.fillRect(0,p.y-r,Math.max(0,p.x-r),r*2);cx.fillRect(p.x+r,p.y-r,W,r*2)}
   if(dark){cx.fillStyle='rgba(0,0,0,.45)';cx.fillRect(0,0,W,H)}
+  if(G.myth&&(G.boss||G.cine>0)){const M=G.boss?GODC[G.boss.kind]:'#FFE890';const vg=cx.createRadialGradient(W/2,H/2,H*.25,W/2,H/2,H*.72);vg.addColorStop(0,'rgba(0,0,0,0)');vg.addColorStop(1,hexA(M,.32));cx.fillStyle=vg;cx.fillRect(0,0,W,H)}
   if(G.ultOn>0&&G.ultKind==='freeze'){cx.fillStyle='rgba(140,200,255,.18)';cx.fillRect(0,0,W,H)}
   if(G.flash>0){cx.fillStyle=`rgba(255,255,255,${G.flash*.9})`;cx.fillRect(0,0,W,H)}
   // 航程條
   cx.fillStyle='#000';cx.fillRect(10,H-8,W-20,4);cx.fillStyle='#4B3A8C';cx.fillRect(11,H-7,W-22,2);cx.fillStyle='#F8C838';cx.fillRect(11,H-7,Math.round((W-22)*(G.lvl-1)/(LEVELS-1)),2);
-  cx.fillStyle='#FFF6E0';cx.font='6px "Press Start 2P",monospace';cx.textAlign='left';cx.fillText('EARTH',10,H-13);cx.textAlign='right';cx.fillText('10K DOG',W-10,H-13);
+  cx.fillStyle='#FFF6E0';cx.font='6px "Press Start 2P",monospace';cx.textAlign='left';cx.fillText(G.myth?'GAIA':'EARTH',10,H-13);cx.textAlign='right';cx.fillText(G.myth?'OLYMPUS':'10K DOG',W-10,H-13);
   if(G.boss){const w=W-20;cx.fillStyle='#000';cx.fillRect(10,44,w,5);cx.fillStyle='#E8453C';cx.fillRect(10,44,Math.round(w*Math.max(0,G.boss.hp)/G.boss.max),5);
     cx.fillStyle='#FFF6E0';cx.font='900 8px "Noto Sans TC",sans-serif';cx.textAlign='left';cx.fillText(MONS.find(m=>m.k===G.boss.kind).name.split('（')[0],10,56)}
   if(G.warn>0){const on=Math.floor(G.t*6)%2;cx.fillStyle=on?'rgba(232,69,60,.35)':'rgba(232,69,60,.12)';cx.fillRect(0,0,W,H);
     cx.fillStyle='#E8453C';for(let i=0;i<W;i+=16){cx.fillRect(i+(on?0:8),H*.34|0,8,4);cx.fillRect(i+(on?8:0),H*.34+40|0,8,4)}
     cx.fillStyle='#000';cx.fillRect(0,H*.34+6|0,W,32);cx.fillStyle=on?'#FF4D3C':'#FFB0A8';cx.font='14px "Press Start 2P",monospace';cx.textAlign='center';cx.fillText('WARNING',W/2,H*.34+18);
-    cx.fillStyle='#FFF6E0';cx.font='900 8px "Noto Sans TC",sans-serif';cx.fillText(MONS.find(m=>m.k===BOSS_AT[G.lvl]).name.split('（')[0]+' 接近中',W/2,H*.34+32)}
+    cx.fillStyle='#FFF6E0';cx.font='900 8px "Noto Sans TC",sans-serif';cx.fillText(MONS.find(m=>m.k===bossAt(G.lvl)).name.split('（')[0]+' 接近中',W/2,H*.34+32)}
   else if(G.banner>0){cx.globalAlpha=Math.min(1,G.banner);cx.textAlign='center';cx.fillStyle='#000';cx.fillRect(0,H*.36|0,W,34);
     cx.fillStyle='#FFF0B0';cx.font='12px "Press Start 2P",monospace';cx.fillText('LEVEL '+G.lvl+'/'+LEVELS,W/2,H*.36+11);
-    cx.fillStyle='#FFF6E0';cx.font='900 9px "Noto Sans TC",sans-serif';cx.fillText(LEVEL_SUB[G.lvl]||'',W/2,H*.36+26);cx.globalAlpha=1}
+    cx.fillStyle='#FFF6E0';cx.font='900 9px "Noto Sans TC",sans-serif';cx.fillText((G.myth?MYTH[G.lvl].sub:LEVEL_SUB[G.lvl])||'',W/2,H*.36+26);cx.globalAlpha=1}
   if(G.portrait>0){const a=Math.min(1,G.portrait*1.5);cx.globalAlpha=a*.85;cx.fillStyle='#000';cx.fillRect(0,H*.32|0,W,110);cx.globalAlpha=a;
     const i=img.dealer;if(i&&i.complete){cx.drawImage(i,0,0,i.naturalWidth,i.naturalHeight,W/2-32,H*.32+6|0,64,76)}
     cx.fillStyle='#E8453C';cx.font='10px "Press Start 2P",monospace';cx.textAlign='center';cx.fillText('DEALER',W/2,H*.32+92);cx.globalAlpha=1}
@@ -1014,9 +1218,11 @@ function hud(){
 const OVS=['home','hangar','shop','guide','board','pause','over','story','pvp','pvover','deposit'];
 function show(id){OVS.forEach(k=>$(k).hidden=k!==id);$('hud').hidden=!(id==='play'||id==='pause');$('bUlt').hidden=id!=='play';if(id!=='play')$('dlg').hidden=true}
 function today(){const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()}
+function renderModes(){$('modeList').innerHTML=[['main','主線：牛市核心','var(--gold)'],['myth','神話：諸神黃昏','#C8A0FF']].map(([k,nm,c])=>`<button data-mode="${k}" class="${S.mode===k?'sel':''}" style="${S.mode===k?'background:'+c:''}">${nm}</button>`).join('')}
+$('modeList').addEventListener('click',e=>{const b=e.target.closest('[data-mode]');if(!b)return;S.mode=b.dataset.mode;save();renderModes()});
 function renderDiffs(){$('diffList').style.gridTemplateColumns=S.hellCleared?'repeat(5,1fr)':'repeat(4,1fr)';$('diffList').innerHTML=DIFFS.filter(d=>!d.hidden||S.hellCleared).map(d=>`<button data-diff="${d.k}" class="${S.diff===d.k?'sel':''}" style="${S.diff===d.k?'background:'+d.col:''}">${d.name}</button>`).join('')}
 $('diffList').addEventListener('click',e=>{const b=e.target.closest('[data-diff]');if(!b)return;S.diff=b.dataset.diff;save();renderDiffs()});
-function refreshHome(){renderDiffs();$('heroTag').hidden=!S.a9Cleared;$('wCoins').textContent=fmt(S.coins);$('wBest').textContent=fmt(S.best);const r=rankOf(S.best),ni=RANKS.indexOf(r)+1,nx=RANKS[ni];$('wRank').innerHTML=medalHTML(r)+' 市值 '+r.cap+' 的 <b style="color:'+r.col+'">'+r.name+'</b>'+(nx?'<br><span style="color:var(--mute);font-size:11px">再 '+fmt(nx.min-S.best)+' 分升級到 '+nx.cap+' '+nx.name+'</span>':'<br><span style="color:var(--mute);font-size:11px">已是最高等級</span>');drawMedals();}
+function refreshHome(){renderModes();renderDiffs();$('heroTag').hidden=!S.a9Cleared;$('godTag').hidden=!S.godSlayer;$('wCoins').textContent=fmt(S.coins);$('wBest').textContent=fmt(S.best);const r=rankOf(S.best),ni=RANKS.indexOf(r)+1,nx=RANKS[ni];$('wRank').innerHTML=medalHTML(r)+' 市值 '+r.cap+' 的 <b style="color:'+r.col+'">'+r.name+'</b>'+(nx?'<br><span style="color:var(--mute);font-size:11px">再 '+fmt(nx.min-S.best)+' 分升級到 '+nx.cap+' '+nx.name+'</span>':'<br><span style="color:var(--mute);font-size:11px">已是最高等級</span>');drawMedals();}
 function toast(t){const el=$('toast');el.textContent=t;el.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>el.classList.remove('show'),1600)}
 function goHome(){if(G&&mode!=='over')save();mode='home';G=null;refreshHome();show('home')}
 let DL=null;
@@ -1028,6 +1234,7 @@ function drawPortrait(g,who){
   else if(who==='牛市核心'){const i=img.coinB;g.fillStyle='#F8C838';g.fillRect(2,2,20,20);if(i&&i.complete)g.drawImage(i,3,3,18,18)}
   else if(who==='？？？'&&G&&G.won){g.fillStyle='#0A0720';g.fillRect(0,0,24,24);g.fillStyle='#FFF0B0';g.fillRect(11,11,2,2);g.fillRect(4,6,1,1);g.fillRect(18,15,1,1);g.fillRect(8,18,1,1)}
   else if(who==='關稅大帝'){g.drawImage(SPR.emperor,3,3)}
+  else if(GODKEY[who]){g.fillStyle=GODC[GODKEY[who]];g.fillRect(0,0,24,24);g.fillStyle='#1A0E14';g.fillRect(1,1,22,22);g.drawImage(GODSPR[GODKEY[who]],0,0,16,18,2,1,20,22)}
   else if(who==='熊市大熊'){g.drawImage(BEAR,4,5)}
   else if(who==='比特幣三姐'||who==='神秘刺客'||who==='？？？'){const i=img.ninja;if(i&&i.complete)g.drawImage(i,0,0,48,48,0,0,24,24)}
   else if(who==='爆倉蟹貨'){g.fillStyle='#D8402C';g.fillRect(3,9,18,8);g.fillRect(1,11,2,4);g.fillRect(21,11,2,4);g.fillRect(4,4,4,5);g.fillRect(16,4,4,5);g.fillStyle='#fff';g.fillRect(8,7,3,4);g.fillRect(13,7,3,4);g.fillStyle='#000';g.fillRect(9,8,1,1);g.fillRect(14,8,1,1)}
@@ -1035,15 +1242,15 @@ function drawPortrait(g,who){
 function dlgNext(){if(mode!=='dlg'||!DL)return;DL.i++;if(DL.i>=DL.lines.length){$('dlg').hidden=true;const cb=DL.cb;DL=null;mode='play';last=performance.now();if(cb)cb()}else showLine()}
 $('dlg').addEventListener('click',e=>{e.stopPropagation();dlgNext()});
 let SI=0;
-function showStory(cb){SI=0;$('storyImg').src=jetURL(S.jet);$('storyText').textContent=STORY[0];$('bStoryNext').textContent='繼續';show('story');mode='story';$('bStoryNext').onclick=()=>{SI++;if(SI>=STORY.length){cb();return}$('storyText').textContent=STORY[SI];if(SI===STORY.length-1)$('bStoryNext').textContent='出發！'};$('bStorySkip').onclick=cb}
-$('bStory').onclick=()=>showStory(goHome);
-function start(){audio();if(!S.introSeen){S.introSeen=1;save();showStory(startRun);return}startRun()}
+function showStory(cb,pg){pg=pg||STORY;SI=0;$('storyImg').src=jetURL(S.jet);$('storyText').textContent=pg[0];$('bStoryNext').textContent='繼續';show('story');mode='story';$('bStoryNext').onclick=()=>{SI++;if(SI>=pg.length){cb();return}$('storyText').textContent=pg[SI];if(SI===pg.length-1)$('bStoryNext').textContent='出發！'};$('bStorySkip').onclick=cb}
+$('bStory').onclick=()=>showStory(goHome,S.mode==='myth'?STORY_MYTH:STORY);
+function start(){audio();if(S.mode==='myth'){if(!S.mythSeen){S.mythSeen=1;save();showStory(startRun,STORY_MYTH);return}startRun();return}if(!S.introSeen){S.introSeen=1;save();showStory(startRun);return}startRun()}
 function startRun(){newRun();hudCache='';mode='play';show('play');hud();last=performance.now()}
 function pause(){if(mode!=='play')return;mode='pause';save();show('pause')}
 function resume(){mode='play';show('play');last=performance.now()}
 function endScreen(won){
   mode='over';const nb=G.score>S.best;if(nb)S.best=G.score;save();
-  $('oTitle').textContent=won?(G.D.k==='a9'?'傳說的 10K 勇者':'抵達 10K DOG 星！'):'爆倉！';$('oTitle').style.color=won?'var(--green)':'var(--red)';
+  $('oTitle').textContent=won?(G.myth?'擊敗神的小狗':G.D.k==='a9'?'傳說的 10K 勇者':'抵達 10K DOG 星！'):'爆倉！';$('oTitle').style.color=won?'var(--green)':'var(--red)';
   $('oScore').textContent=fmt(G.score);$('oCoins').textContent='+'+fmt(G.coins);$('oWave').textContent=won?'終點':'L'+G.lvl;
   const rk=rankOf(G.score);$('oNew').hidden=false;$('oNew').innerHTML=(nb?'NEW RECORD · ':'')+medalHTML(rk,16)+' 市值 '+rk.cap+' '+rk.name;setTimeout(drawMedals,0);
   $('oShiny').hidden=!G.shinyGot.length;$('oShiny').textContent='✦ 本局獲得閃光幣：'+G.shinyGot.join('、')+'（截圖炫耀一下）';
@@ -1051,8 +1258,8 @@ function endScreen(won){
   show('over');
 }
 function gameOver(){endScreen(false)}
-function win(){G.won=true;addCoins(500);if(G.D.k==='hell'&&!S.hellCleared){S.hellCleared=1;save();setTimeout(()=>toast('隱藏難度 A9 已解鎖！'),500)}sfx.win();if(G.D.k==='a9'){S.a9Cleared=1;const nh=!S.jets.includes('hero');if(nh)S.jets.push('hero');save();syncPlayer();dialog(DIALOG.endingA9,()=>{if(nh)toast('獲得專屬戰機：傳說勇者・10K 王者機！');endScreen(true)})}else dialog(DIALOG.ending,()=>endScreen(true))}
-function submitScore(){const nm=($('nameIn').value||'匿名').trim().slice(0,10);S.lastName=nm;const rec={n:nm,s:G.score,l:(G.won?'終點':'L'+G.lvl)+'·'+G.D.name,r:rankOf(G.score).cap};S.lb.push(Object.assign({d:today()},rec));S.lb.sort((a,b)=>b.s-a.s);S.lb=S.lb.slice(0,10);save();$('bSubmit').disabled=true;G.lbDone=true;
+function win(){G.won=true;addCoins(500);if(G.D.k==='hell'&&!S.hellCleared){S.hellCleared=1;save();setTimeout(()=>toast('隱藏難度 A9 已解鎖！'),500)}sfx.win();if(G.myth){const nt=!S.godSlayer;S.godSlayer=1;save();syncPlayer();dialog(DIALOG.mythEnding,()=>{if(nt)toast('獲得稱號：擊敗神的小狗');endScreen(true)});return}if(G.D.k==='a9'){S.a9Cleared=1;const nh=!S.jets.includes('hero');if(nh)S.jets.push('hero');save();syncPlayer();dialog(DIALOG.endingA9,()=>{if(nh)toast('獲得專屬戰機：傳說勇者・10K 王者機！');endScreen(true)})}else dialog(DIALOG.ending,()=>endScreen(true))}
+function submitScore(){const nm=($('nameIn').value||'匿名').trim().slice(0,10);S.lastName=nm;const rec={n:nm,s:G.score,l:(G.myth?'神話':'')+(G.won?'終點':'L'+G.lvl)+'·'+G.D.name,r:rankOf(G.score).cap};S.lb.push(Object.assign({d:today()},rec));S.lb.sort((a,b)=>b.s-a.s);S.lb=S.lb.slice(0,10);save();$('bSubmit').disabled=true;G.lbDone=true;
   lbPush(rec).then(()=>toast('已上傳全球排行榜')).catch(()=>toast('已存本機（全球榜上傳失敗）'))}
 function renderShop(){
   $('sCoins').textContent=fmt(S.coins);
@@ -1122,8 +1329,8 @@ async function gacha(n,free){
       box.innerHTML=`<div class="h1" style="font-size:18px">${n===1?'抽到了！':'十連結果'}</div><div style="display:grid;grid-template-columns:repeat(${n===1?1:5},1fr);gap:6px;max-width:340px">${pulls.map(j=>`<div style="text-align:center"><img src="${jetURL(j.k)}" style="width:${n===1?110:56}px;image-rendering:pixelated;filter:drop-shadow(0 0 8px ${RAR[j.rar].col})"><div style="font-size:10px;color:${RAR[j.rar].col}">${RAR[j.rar].name}</div><div style="font-size:${n===1?16:9}px">${j.name}</div></div>`).join('')}</div><small style="color:var(--mute)">${sig==='FREE'?'免費抽獎券':sig==='COIN'?'已扣 '+(100*n)+' 遊戲幣':'tx '+sig.slice(0,10)+'…（已記錄到你的錢包帳號）'}</small><div class="row2" style="width:100%;max-width:260px"><button id="bGUse" class="btn small green">裝備 ${best.name}</button><button id="bGClose" class="btn small ghost">關閉</button></div>`;
       $('bGUse').onclick=()=>{S.jet=best.k;save();box.hidden=true;renderHangar()};$('bGClose').onclick=()=>{box.hidden=true;renderHangar()}}},110)}
 // 用錢包地址同步已擁有戰機（換機／換瀏覽器都攞得返）
-function syncPlayer(){if(!WAL.addr)return;fetch(`${FBBASE}/players/${WAL.addr}?key=${FB.key}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:{jets:{arrayValue:{values:S.jets.map(k=>({stringValue:k}))}},pulls:{integerValue:String(S.pulls||0)},g:{stringValue:S.gid||''},hell:{integerValue:String(S.hellCleared?1:0)},a9:{integerValue:String(S.a9Cleared?1:0)}}})}).catch(()=>{})}
-async function loadPlayer(){if(!WAL.addr)return;try{const r=await fetch(`${FBBASE}/players/${WAL.addr}?key=${FB.key}`);if(!r.ok)return;const j=await r.json();const jets=(j.fields&&j.fields.jets&&j.fields.jets.arrayValue.values||[]).map(v=>v.stringValue);let added=0;for(const k of jets)if(jetOf(k).k===k&&!S.jets.includes(k)&&!['rainbow','chrome','void'].includes(k)){S.jets.push(k);added++}const f=j.fields||{};if(f.hell&&+f.hell.integerValue&&!S.hellCleared){S.hellCleared=1;added++}if(f.a9&&+f.a9.integerValue&&!S.a9Cleared)S.a9Cleared=1;if(added){save();refreshHome();toast('已從錢包帳號還原資料（'+added+'）')}}catch(e){}}
+function syncPlayer(){if(!WAL.addr)return;fetch(`${FBBASE}/players/${WAL.addr}?key=${FB.key}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:{jets:{arrayValue:{values:S.jets.map(k=>({stringValue:k}))}},pulls:{integerValue:String(S.pulls||0)},g:{stringValue:S.gid||''},hell:{integerValue:String(S.hellCleared?1:0)},a9:{integerValue:String(S.a9Cleared?1:0)},god:{integerValue:String(S.godSlayer?1:0)}}})}).catch(()=>{})}
+async function loadPlayer(){if(!WAL.addr)return;try{const r=await fetch(`${FBBASE}/players/${WAL.addr}?key=${FB.key}`);if(!r.ok)return;const j=await r.json();const jets=(j.fields&&j.fields.jets&&j.fields.jets.arrayValue.values||[]).map(v=>v.stringValue);let added=0;for(const k of jets)if(jetOf(k).k===k&&!S.jets.includes(k)&&!['rainbow','chrome','void'].includes(k)){S.jets.push(k);added++}const f=j.fields||{};if(f.hell&&+f.hell.integerValue&&!S.hellCleared){S.hellCleared=1;added++}if(f.a9&&+f.a9.integerValue&&!S.a9Cleared)S.a9Cleared=1;if(f.god&&+f.god.integerValue&&!S.godSlayer)S.godSlayer=1;if(added){save();refreshHome();toast('已從錢包帳號還原資料（'+added+'）')}}catch(e){}}
 $('bPlay').onclick=start;$('bShop').onclick=()=>{renderShop();show('shop')};$('bShopBack').onclick=goHome;
 $('bHangar').onclick=()=>{renderHangar();show('hangar')};$('bHangarBack').onclick=goHome;
 $('bGuide').onclick=()=>{renderGuide();show('guide')};$('bGuideBack').onclick=goHome;
