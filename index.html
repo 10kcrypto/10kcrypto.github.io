@@ -192,6 +192,8 @@ table.lb tr.me td{background:#2A1E5C}
     <div class="wallet" style="font-size:22px;letter-spacing:.2em" id="myGid">------</div>
     <div class="row2" style="width:100%;max-width:300px"><button id="bCopyGid" class="btn small ghost">複製 ID</button><button id="bCopyLink" class="btn small ghost">複製邀請連結</button></div>
     <div class="fine" id="pvRec">戰績 0 勝 0 負</div>
+    <div class="diffs" style="grid-template-columns:1fr 1fr;width:100%;max-width:300px"><button class="sel" style="background:var(--green)">自由模式</button><button disabled style="opacity:.5">對決模式（籌備中）</button></div>
+    <div class="fine">對決模式（押 10KDOG、贏家拿獎池、5% 燒幣）需要伺服器託管獎池同驗證勝負，未上線前不開放。</div>
     <div class="stack">
       <button id="bHost" class="btn big">建立房間，等對手</button>
       <div class="nameBox"><input id="joinIn" maxlength="6" placeholder="輸入對手 ID" style="text-transform:uppercase;letter-spacing:.2em"><button id="bJoin" class="btn small green">加入</button></div>
@@ -292,8 +294,8 @@ const JETS=[
   {k:'chrome',name:'黃金 10K 神機',rar:3,desc:'傷害 +80%・生命 +2・磁石 ×3',spd:1.1,dmg:1.8,rate:1.1,hp:2,inv:1.5,mag:3},
 ];
 const RAR=[{name:'預設',col:'#A89CD8'},{name:'普通',col:'#58A8F8'},{name:'稀有',col:'#F8C838'},{name:'傳說',col:'#FF8FB8'}];
-const GACHA_COST=500;
-function gachaRoll(){const r=Math.random();const rar=r<.10?3:r<.40?2:1;const pool=JETS.filter(j=>j.rar===rar);return pool[Math.random()*pool.length|0]}
+const GACHA_TOKEN=1000; // 每抽 10KDOG
+function gachaRoll(minRar){const r=Math.random();let rar=r<.10?3:r<.40?2:1;if(minRar&&rar<minRar)rar=minRar;const pool=JETS.filter(j=>j.rar===rar);return pool[Math.random()*pool.length|0]}
 const jetOf=k=>JETS.find(j=>j.k===k)||JETS[0];
 const ULTS=[
   {k:'homing',name:'自動追蹤',desc:'8 秒內子彈自動追敵'},
@@ -383,7 +385,7 @@ function medalHTML(r,size=22){return `<canvas class="medal" data-rank="${r.cap}"
 function drawMedals(){document.querySelectorAll('canvas.medal[data-rank]').forEach(c=>{const r=RANKS.find(x=>x.cap===c.dataset.rank);const g=c.getContext('2d');g.clearRect(0,0,12,14);
   g.fillStyle='#1A0E14';g.fillRect(3,0,6,5);g.fillStyle='#E8453C';g.fillRect(4,0,4,4);g.fillStyle='#1A0E14';g.fillRect(1,4,10,10);g.fillRect(0,5,12,8);g.fillStyle=r.col;g.fillRect(2,5,8,8);g.fillRect(1,6,10,6);g.fillStyle='rgba(255,255,255,.5)';g.fillRect(3,6,2,1);g.fillRect(2,7,1,2);
   const i=RANKS.indexOf(r);g.fillStyle='#1A0E14';for(let k=0;k<Math.min(3,i);k++)g.fillRect(4+k*2,9,1,2)})}
-const VERSION='beta 1.7';
+const VERSION='beta 1.8';
 /* ---------- Phantom 錢包 ---------- */
 const SOL_RPC='https://solana-rpc.publicnode.com';
 let WAL={addr:null,sol:null};
@@ -393,7 +395,7 @@ async function walletConnect(){
   if(!ph){const url=location.href.split('#')[0];const isMobile=/Android|iPhone|iPad/i.test(navigator.userAgent);
     if(isMobile){location.href='https://phantom.app/ul/browse/'+encodeURIComponent(url)+'?ref='+encodeURIComponent(location.origin);return}
     toast('請先安裝 Phantom 錢包擴充功能');window.open('https://phantom.app/','_blank');return}
-  try{const r=await ph.connect();WAL.addr=r.publicKey.toString();S.wallet=WAL.addr;save();renderWallet();walletBalance()}catch(e){toast('已取消連接')}
+  try{const r=await ph.connect();WAL.addr=r.publicKey.toString();S.wallet=WAL.addr;save();renderWallet();walletBalance();loadPlayer()}catch(e){toast('已取消連接')}
 }
 async function walletBalance(){if(!WAL.addr)return;try{const r=await fetch(SOL_RPC,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:1,method:'getBalance',params:[WAL.addr]})});const j=await r.json();WAL.sol=j.result.value/1e9;renderWallet()}catch(e){}}
 const TOKEN={mint:'C9HwNWaVVecVm35raAaZBXEa4sQF3hGXszhGKpy3pump',treasury:'2KpHRcCsgKArcjERGQbocQyWc6g7rjNHXoqUqFAdwMJC',decimals:6,rate:0.1};
@@ -403,32 +405,31 @@ function ataOf(w3,ownerStr){const tp=new w3.PublicKey(TOKEN_PROG),ap=new w3.Publ
 async function tokenBalance(){if(!WAL.addr)return null;await loadWeb3();const ata=ataOf(window.solanaWeb3,WAL.addr).toString();
   const r=await fetch(SOL_RPC,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:1,method:'getTokenAccountBalance',params:[ata]})});
   const j=await r.json();const t=j.result?+j.result.value.uiAmount:0;TOKBAL=t;return t}
-function loadWeb3(){return new Promise((res,rej)=>{if(window.solanaWeb3)return res();const sc=document.createElement('script');sc.src='https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js';sc.onload=res;sc.onerror=()=>rej(new Error('web3'));document.head.appendChild(sc)})}
+function loadWeb3(){return new Promise((res,rej)=>{if(window.solanaWeb3)return res();const sc=document.createElement('script');sc.src='https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js';sc.integrity='sha384-xo1g+ODR6i1cxIVZeALc/apXFHeaJHO1j1whMO3dhtdBChWeaihnDs7UnXs9ch78';sc.crossOrigin='anonymous';sc.onload=res;sc.onerror=()=>rej(new Error('錢包程式庫載入失敗（完整性檢查不通過）'));document.head.appendChild(sc)})}
+// 只會建立「玩家 → 金庫」固定金額嘅 SPL 轉帳；私鑰永遠喺 Phantom，網頁碰唔到
+async function sendToken(amt,memoTag){
+  const ph=phantom();if(!ph||!WAL.addr)throw new Error('請先連接 Phantom');
+  await loadWeb3();const w3=window.solanaWeb3;
+  const owner=new w3.PublicKey(WAL.addr),mint=new w3.PublicKey(TOKEN.mint),dest=new w3.PublicKey(TOKEN.treasury),tp=new w3.PublicKey(TOKEN_PROG),ap=new w3.PublicKey(ATA_PROG);
+  const src=ataOf(w3,WAL.addr),dst=ataOf(w3,TOKEN.treasury);
+  const conn=new w3.Connection(SOL_RPC,'confirmed');const tx=new w3.Transaction();
+  tx.add(new w3.TransactionInstruction({programId:ap,keys:[{pubkey:owner,isSigner:true,isWritable:true},{pubkey:dst,isSigner:false,isWritable:true},{pubkey:dest,isSigner:false,isWritable:false},{pubkey:mint,isSigner:false,isWritable:false},{pubkey:w3.SystemProgram.programId,isSigner:false,isWritable:false},{pubkey:tp,isSigner:false,isWritable:false}],data:new Uint8Array([1])}));
+  const raw=BigInt(amt)*BigInt(10**TOKEN.decimals);const data=new Uint8Array(10);data[0]=12;new DataView(data.buffer).setBigUint64(1,raw,true);data[9]=TOKEN.decimals;
+  tx.add(new w3.TransactionInstruction({programId:tp,keys:[{pubkey:src,isSigner:false,isWritable:true},{pubkey:mint,isSigner:false,isWritable:false},{pubkey:dst,isSigner:false,isWritable:true},{pubkey:owner,isSigner:true,isWritable:false}],data}));
+  tx.feePayer=owner;tx.recentBlockhash=(await conn.getLatestBlockhash()).blockhash;
+  const {signature}=await ph.signAndSendTransaction(tx);
+  await conn.confirmTransaction(signature,'confirmed');
+  fetch(`${FBBASE}/deposits/${signature}?key=${FB.key}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:{w:{stringValue:WAL.addr},a:{integerValue:String(amt)},k:{stringValue:memoTag||''},g:{stringValue:S.gid||''}}})}).catch(()=>{});
+  return signature}
 function openDeposit(){if(!WAL.addr)return;show('deposit');$('depWal').textContent='錢包：'+WAL.addr;$('depStatus').textContent='';$('depBal').textContent='10KDOG 餘額：讀取中…';tokenBalance().then(b=>{$('depBal').textContent='10KDOG 餘額：'+(b==null?'—':b.toLocaleString())}).catch(()=>{$('depBal').textContent='10KDOG 餘額：讀不到'})}
 async function depositGo(){
   const amt=Math.floor(+$('depAmt').value||0);if(amt<1000){$('depStatus').textContent='最少 1,000 10KDOG';return}
   if(TOKBAL!=null&&amt>TOKBAL){$('depStatus').textContent='餘額不足';return}
   const ph=phantom();if(!ph||!WAL.addr){$('depStatus').textContent='請先連接 Phantom';return}
-  $('bDepGo').disabled=true;$('depStatus').textContent='準備交易…';
-  try{
-    await loadWeb3();const w3=window.solanaWeb3;
-    const owner=new w3.PublicKey(WAL.addr),mint=new w3.PublicKey(TOKEN.mint),dest=new w3.PublicKey(TOKEN.treasury),tp=new w3.PublicKey(TOKEN_PROG),ap=new w3.PublicKey(ATA_PROG);
-    const src=ataOf(w3,WAL.addr),dst=ataOf(w3,TOKEN.treasury);
-    const conn=new w3.Connection(SOL_RPC,'confirmed');
-    const tx=new w3.Transaction();
-    // 冪等建立金庫 ATA（已存在就略過）
-    tx.add(new w3.TransactionInstruction({programId:ap,keys:[{pubkey:owner,isSigner:true,isWritable:true},{pubkey:dst,isSigner:false,isWritable:true},{pubkey:dest,isSigner:false,isWritable:false},{pubkey:mint,isSigner:false,isWritable:false},{pubkey:w3.SystemProgram.programId,isSigner:false,isWritable:false},{pubkey:tp,isSigner:false,isWritable:false}],data:new Uint8Array([1])}));
-    // TransferChecked
-    const raw=BigInt(amt)*BigInt(10**TOKEN.decimals);const data=new Uint8Array(10);data[0]=12;new DataView(data.buffer).setBigUint64(1,raw,true);data[9]=TOKEN.decimals;
-    tx.add(new w3.TransactionInstruction({programId:tp,keys:[{pubkey:src,isSigner:false,isWritable:true},{pubkey:mint,isSigner:false,isWritable:false},{pubkey:dst,isSigner:false,isWritable:true},{pubkey:owner,isSigner:true,isWritable:false}],data}));
-    tx.feePayer=owner;tx.recentBlockhash=(await conn.getLatestBlockhash()).blockhash;
-    $('depStatus').textContent='請在 Phantom 確認…';
-    const {signature}=await ph.signAndSendTransaction(tx);
-    $('depStatus').textContent='已送出，等待確認… '+signature.slice(0,8);
-    await conn.confirmTransaction(signature,'confirmed');
+  $('bDepGo').disabled=true;$('depStatus').textContent='請在 Phantom 核對金額（'+amt.toLocaleString()+' 10KDOG）後確認…';
+  try{const signature=await sendToken(amt,'deposit');
     const coins=Math.floor(amt*TOKEN.rate);S.coins+=coins;S.deposits=(S.deposits||[]);S.deposits.push({sig:signature,amt,coins,t:Date.now()});save();
     $('depStatus').textContent='成功！+'+coins+' 遊戲幣（tx '+signature.slice(0,8)+'…）';toast('充值成功 +'+coins+' 幣');
-    fetch(`${FBBASE}/deposits/${signature}?key=${FB.key}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:{w:{stringValue:WAL.addr},a:{integerValue:String(amt)},c:{integerValue:String(coins)},g:{stringValue:S.gid||''}}})}).catch(()=>{});
     tokenBalance().then(b=>{$('depBal').textContent='10KDOG 餘額：'+b.toLocaleString()}).catch(()=>{});
   }catch(e){$('depStatus').textContent='失敗：'+(e.message||e)}
   $('bDepGo').disabled=false;
@@ -999,12 +1000,14 @@ function renderShop(){
 function renderHangar(){
   $('gCoins').textContent=fmt(S.coins);
   const owned=JETS.filter(j=>S.jets.includes(j.k)),locked=JETS.length-owned.length;
-  $('jetList').innerHTML=`<div class="jet" style="grid-column:1/-1;border-color:var(--gold);background:linear-gradient(90deg,#2A1E5C,#4A1C5E)"><b>戰機盲盒</b><small>抽一次 ${GACHA_COST} 幣・普通 60%／稀有 30%／傳說 10%<br>重複會退回 200 幣・尚有 ${locked} 款未解鎖</small><button id="bGacha" class="btn small" ${S.coins<GACHA_COST||!locked?'disabled':''}><i class="ci"></i> ${GACHA_COST} 抽一次</button></div>`+
+  const wal=!!WAL.addr;
+  $('jetList').innerHTML=`<div class="jet" style="grid-column:1/-1;border-color:var(--gold);background:linear-gradient(90deg,#2A1E5C,#4A1C5E)"><b>戰機盲盒（10KDOG）</b><small>單抽 ${GACHA_TOKEN.toLocaleString()} 10KDOG・十連 ${(GACHA_TOKEN*10).toLocaleString()} 10KDOG（保底一稀有）<br>普通 60%／稀有 30%／傳說 10%・重複不退・尚有 ${locked} 款未解鎖<br>遊戲幣不能抽機，只用於升級與計分</small>
+    ${wal?`<div class="row2" style="width:100%"><button id="bGacha1" class="btn small" ${!locked?'disabled':''}>單抽</button><button id="bGacha10" class="btn small green" ${!locked?'disabled':''}>十連抽</button></div><small id="gachaMsg" style="color:var(--mute)"></small>`:`<button id="bGachaWal" class="btn small ghost">先連接 Phantom 錢包</button>`}</div>`+
     JETS.map(j=>{const own=S.jets.includes(j.k),sel=S.jet===j.k,rr=RAR[j.rar];
     return own?`<div class="jet ${sel?'sel':''}"><img src="${IMG['jetbig_'+j.k]}" alt=""><b>${j.name}</b><small style="color:${rr.col}">${rr.name}</small><small>${j.desc}</small>
       <button class="btn small ghost" data-jet="${j.k}" ${sel?'disabled':''}>${sel?'使用中':'選用'}</button></div>`
     :`<div class="jet" style="opacity:.6"><div style="width:60px;height:60px;display:flex;align-items:center;justify-content:center;font-family:var(--px);font-size:22px;color:var(--mute)">?</div><b>？？？</b><small style="color:${rr.col}">${rr.name}</small><small>盲盒抽到才會解鎖</small></div>`}).join('');
-  const gb=$('bGacha');if(gb)gb.onclick=gacha;
+  const g1=$('bGacha1'),g10=$('bGacha10'),gw=$('bGachaWal');if(g1)g1.onclick=()=>gacha(1);if(g10)g10.onclick=()=>gacha(10);if(gw)gw.onclick=()=>{walletConnect().then(()=>renderHangar())};
   $('ultList').innerHTML=ULTS.map(u=>`<div class="ult2 ${S.ult===u.k?'sel':''}" data-ult="${u.k}"><b>${u.name}</b><small>${u.desc}</small></div>`).join('');
 }
 $('ultList').addEventListener('click',e=>{const b=e.target.closest('[data-ult]');if(!b)return;S.ult=b.dataset.ult;save();audio();sfx.buy();renderHangar()});
@@ -1029,20 +1032,28 @@ function renderBoard(){
   lbFetch().then(rows=>{$('lbNote').textContent='全球排行榜 · 全社群共用';LBROWS=rows;renderRows(rows)}).catch(()=>{$('lbNote').textContent='連不上全球榜，顯示本機紀錄';LBROWS=S.lb;renderRows(S.lb)});
 }
 $('lbFilter').addEventListener('click',e=>{const b=e.target.closest('[data-f]');if(!b)return;LBF=b.dataset.f;$('lbFilter').querySelectorAll('button').forEach(x=>{x.className=x.dataset.f===LBF?'sel':'';x.style.background=x.dataset.f===LBF?'var(--gold)':''});renderRows(LBROWS)});
-function renderRows(all){const t=$('lbTable');const rows=LBF==='全部'?all:all.filter(r=>(r.l||'').endsWith('·'+LBF)||(LBF==='普通'&&!(r.l||'').includes('·')));if(!rows.length){t.innerHTML='<tr><td>還沒有紀錄，快去打第一場！</td></tr>';return}
+function renderRows(all){const t=$('lbTable');let rows=LBF==='全部'?all:all.filter(r=>(r.l||'').endsWith('·'+LBF)||(LBF==='普通'&&!(r.l||'').includes('·')));
+  const seen={};rows=rows.filter(r=>{const k=(r.n||'').trim().toLowerCase();if(seen[k])return false;seen[k]=1;return true}).slice(0,30);if(!rows.length){t.innerHTML='<tr><td>還沒有紀錄，快去打第一場！</td></tr>';return}
   t.innerHTML=rows.map((r,i)=>{const rk=rankOf(r.s);return `<tr class="${G&&G.lbDone&&r.s===G.score&&r.n===S.lastName?'me':''}"><td class="n">${i+1}</td><td>${medalHTML(rk,16)} ${esc(r.n)}<br><span style="font-size:10px;color:${rk.col}">${rk.cap} ${rk.name}</span></td><td style="color:var(--mute);font-size:11px">${r.l}</td><td class="s">${fmt(r.s)}</td></tr>`}).join('');drawMedals();
 }
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 $('upList').addEventListener('click',e=>{const b=e.target.closest('[data-up]');if(!b)return;const u=UPS.find(x=>x.k===b.dataset.up),lv=S.up[u.k];
   if(lv>=u.max||S.coins<u.cost[lv])return;S.coins-=u.cost[lv];S.up[u.k]++;save();audio();sfx.buy();toast(u.name+' 升級至 LV'+S.up[u.k]);renderShop()});
 $('jetList').addEventListener('click',e=>{const b=e.target.closest('[data-jet]');if(!b)return;const j=jetOf(b.dataset.jet);if(!S.jets.includes(j.k))return;S.jet=j.k;save();audio();sfx.buy();renderHangar()});
-function gacha(){if(S.coins<GACHA_COST)return;audio();S.coins-=GACHA_COST;let j=gachaRoll();const dup=S.jets.includes(j.k);
+async function gacha(n){
+  if(!WAL.addr)return;audio();const amt=GACHA_TOKEN*n;const msg=$('gachaMsg');
+  $('bGacha1').disabled=$('bGacha10').disabled=true;msg.textContent='請在 Phantom 核對：轉帳 '+amt.toLocaleString()+' 10KDOG 到社區金庫…';
+  let sig;try{sig=await sendToken(amt,'gacha'+n)}catch(e){msg.textContent='未完成：'+(e.message||e);renderHangar();return}
+  const pulls=[];for(let i=0;i<n;i++)pulls.push(gachaRoll(n===10&&i===n-1&&!pulls.some(p=>p.rar>=2)?2:0));
+  for(const j of pulls)if(!S.jets.includes(j.k))S.jets.push(j.k);S.pulls=(S.pulls||0)+n;save();syncPlayer();
   const box=$('gachaBox');box.hidden=false;box.innerHTML='<div class="h1" style="font-size:20px">盲盒開啟中…</div><div class="brand" style="font-size:40px">?</div>';
-  let n=0;const iv=setInterval(()=>{const any=JETS[Math.random()*JETS.length|0];box.innerHTML=`<div class="h1" style="font-size:20px">盲盒開啟中…</div><img src="${IMG['jetbig_'+any.k]}" style="width:90px;image-rendering:pixelated">`;beep(300+n*60,.05,'square',.04);n++;
-    if(n>=12){clearInterval(iv);const rr=RAR[j.rar];if(j.rar===3){sfx.jackpot()}else sfx.buy();
-      if(dup){S.coins+=200}else S.jets.push(j.k);save();
-      box.innerHTML=`<div class="h1" style="font-size:18px;color:${rr.col}">${rr.name}${j.rar===3?' ✦✦✦':''}</div><img src="${IMG['jetbig_'+j.k]}" style="width:110px;image-rendering:pixelated;filter:drop-shadow(0 0 12px ${rr.col})"><b style="font-size:18px">${j.name}</b><small style="color:var(--mute)">${j.desc}</small>${dup?'<small style="color:var(--gold)">已擁有，退回 200 幣</small>':''}<div class="row2" style="width:100%;max-width:260px"><button id="bGUse" class="btn small green" ${dup&&S.jet===j.k?'disabled':''}>裝備</button><button id="bGClose" class="btn small ghost">關閉</button></div>`;
-      $('bGUse').onclick=()=>{S.jet=j.k;save();box.hidden=true;renderHangar()};$('bGClose').onclick=()=>{box.hidden=true;renderHangar()}}},110)}
+  let k=0;const iv=setInterval(()=>{const any=JETS[Math.random()*JETS.length|0];box.innerHTML=`<div class="h1" style="font-size:20px">盲盒開啟中…</div><img src="${IMG['jetbig_'+any.k]}" style="width:90px;image-rendering:pixelated">`;beep(300+k*60,.05,'square',.04);k++;
+    if(k>=12){clearInterval(iv);const best=pulls.reduce((a,b)=>b.rar>a.rar?b:a,pulls[0]);if(best.rar===3)sfx.jackpot();else sfx.buy();
+      box.innerHTML=`<div class="h1" style="font-size:18px">${n===1?'抽到了！':'十連結果'}</div><div style="display:grid;grid-template-columns:repeat(${n===1?1:5},1fr);gap:6px;max-width:340px">${pulls.map(j=>`<div style="text-align:center"><img src="${IMG['jetbig_'+j.k]}" style="width:${n===1?110:56}px;image-rendering:pixelated;filter:drop-shadow(0 0 8px ${RAR[j.rar].col})"><div style="font-size:10px;color:${RAR[j.rar].col}">${RAR[j.rar].name}</div><div style="font-size:${n===1?16:9}px">${j.name}</div></div>`).join('')}</div><small style="color:var(--mute)">tx ${sig.slice(0,10)}…（已記錄到你的錢包帳號）</small><div class="row2" style="width:100%;max-width:260px"><button id="bGUse" class="btn small green">裝備 ${best.name}</button><button id="bGClose" class="btn small ghost">關閉</button></div>`;
+      $('bGUse').onclick=()=>{S.jet=best.k;save();box.hidden=true;renderHangar()};$('bGClose').onclick=()=>{box.hidden=true;renderHangar()}}},110)}
+// 用錢包地址同步已擁有戰機（換機／換瀏覽器都攞得返）
+function syncPlayer(){if(!WAL.addr)return;fetch(`${FBBASE}/players/${WAL.addr}?key=${FB.key}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:{jets:{arrayValue:{values:S.jets.map(k=>({stringValue:k}))}},pulls:{integerValue:String(S.pulls||0)},g:{stringValue:S.gid||''}}})}).catch(()=>{})}
+async function loadPlayer(){if(!WAL.addr)return;try{const r=await fetch(`${FBBASE}/players/${WAL.addr}?key=${FB.key}`);if(!r.ok)return;const j=await r.json();const jets=(j.fields&&j.fields.jets&&j.fields.jets.arrayValue.values||[]).map(v=>v.stringValue);let added=0;for(const k of jets)if(jetOf(k).k===k&&!S.jets.includes(k)){S.jets.push(k);added++}if(added){save();toast('已從錢包帳號還原 '+added+' 架戰機')}}catch(e){}}
 $('bPlay').onclick=start;$('bShop').onclick=()=>{renderShop();show('shop')};$('bShopBack').onclick=goHome;
 $('bHangar').onclick=()=>{renderHangar();show('hangar')};$('bHangarBack').onclick=goHome;
 $('bGuide').onclick=()=>{renderGuide();show('guide')};$('bGuideBack').onclick=goHome;
@@ -1200,7 +1211,7 @@ function loop(now){
   requestAnimationFrame(loop);
 }
 $('ver').textContent=VERSION.toUpperCase();renderWallet();
-setTimeout(()=>{const ph=phantom();if(ph&&S.wallet){ph.connect({onlyIfTrusted:true}).then(r=>{WAL.addr=r.publicKey.toString();renderWallet();walletBalance()}).catch(()=>{})}},800);addEventListener('resize',resize);resize();initSprites();
+setTimeout(()=>{const ph=phantom();if(ph&&S.wallet){ph.connect({onlyIfTrusted:true}).then(r=>{WAL.addr=r.publicKey.toString();renderWallet();walletBalance();loadPlayer()}).catch(()=>{})}},800);addEventListener('resize',resize);resize();initSprites();
 refreshHome();show('home');requestAnimationFrame(loop);
 })();
 </script>
