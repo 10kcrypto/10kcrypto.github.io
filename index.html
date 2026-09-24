@@ -418,7 +418,7 @@ function medalHTML(r,size=22){return `<canvas class="medal" data-rank="${r.cap}"
 function drawMedals(){document.querySelectorAll('canvas.medal[data-rank]').forEach(c=>{const r=RANKS.find(x=>x.cap===c.dataset.rank);const g=c.getContext('2d');g.clearRect(0,0,12,14);
   g.fillStyle='#1A0E14';g.fillRect(3,0,6,5);g.fillStyle='#E8453C';g.fillRect(4,0,4,4);g.fillStyle='#1A0E14';g.fillRect(1,4,10,10);g.fillRect(0,5,12,8);g.fillStyle=r.col;g.fillRect(2,5,8,8);g.fillRect(1,6,10,6);g.fillStyle='rgba(255,255,255,.5)';g.fillRect(3,6,2,1);g.fillRect(2,7,1,2);
   const i=RANKS.indexOf(r);g.fillStyle='#1A0E14';for(let k=0;k<Math.min(3,i);k++)g.fillRect(4+k*2,9,1,2)})}
-const VERSION='beta 2.2';
+const VERSION='beta 2.3';
 /* ---------- Phantom 錢包 ---------- */
 const SOL_RPC='https://solana-rpc.publicnode.com';
 let WAL={addr:null,sol:null};
@@ -1064,7 +1064,7 @@ function renderHangar(){
   $('gCoins').textContent=fmt(S.coins);
   const owned=JETS.filter(j=>S.jets.includes(j.k)),locked=JETS.filter(j=>j.rar<4&&!S.jets.includes(j.k)).length;
   const wal=!!WAL.addr;
-  $('jetList').innerHTML=`<div class="jet" style="grid-column:1/-1;border-color:var(--gold);background:linear-gradient(90deg,#2A1E5C,#4A1C5E)"><b>戰機盲盒（10KDOG）</b><small>單抽 ${GACHA_TOKEN.toLocaleString()} 10KDOG・十連 ${(GACHA_TOKEN*10).toLocaleString()} 10KDOG（保底一稀有）<br>普通 80 款／稀有 17 款／傳說 3 款・傳說機率 1/10,000・重複不退・尚有 ${locked} 款未解鎖<br>可直接付 10KDOG，或用儲值得來的遊戲幣（100 幣＝一抽）</small>
+  $('jetList').innerHTML=`<div class="jet" style="grid-column:1/-1;border-color:var(--gold);background:linear-gradient(90deg,#2A1E5C,#4A1C5E)"><b>戰機盲盒（10KDOG）</b><small>單抽 ${GACHA_TOKEN.toLocaleString()} 10KDOG・十連 ${(GACHA_TOKEN*10).toLocaleString()} 10KDOG（無保底）<br>普通 80 款／稀有 17 款／傳說 3 款・傳說機率 1/10,000・重複不退・尚有 ${locked} 款未解鎖<br>可直接付 10KDOG，或用儲值得來的遊戲幣（100 幣＝一抽）</small>
     <div class="row2" style="width:100%"><button id="bGachaC1" class="btn small" ${S.coins<100||!locked?'disabled':''}>遊戲幣單抽 100</button><button id="bGachaC10" class="btn small" ${S.coins<1000||!locked?'disabled':''}>遊戲幣十連 1,000</button></div>
     ${(S.freePulls||0)>0?`<button id="bGachaFree" class="btn small green" style="width:100%">免費抽獎券 ×${S.freePulls}（免費抽一次）</button>`:''}
     ${wal?`<div class="row2" style="width:100%"><button id="bGacha1" class="btn small" ${!locked?'disabled':''}>單抽</button><button id="bGacha10" class="btn small green" ${!locked?'disabled':''}>十連抽</button></div><small id="gachaMsg" style="color:var(--mute)"></small>`:`<button id="bGachaWal" class="btn small ghost">先連接 Phantom 錢包</button>`}</div>`+
@@ -1113,7 +1113,7 @@ async function gacha(n,free){
   else{if(!WAL.addr)return;const amt=GACHA_TOKEN*n;const msg=$('gachaMsg');
     $('bGacha1').disabled=$('bGacha10').disabled=true;msg.textContent='請在 Phantom 核對：轉帳 '+amt.toLocaleString()+' 10KDOG 到社區金庫…';
     try{sig=await sendToken(amt,'gacha'+n)}catch(e){msg.textContent='未完成：'+(e.message||e);renderHangar();return}}
-  const pulls=[];for(let i=0;i<n;i++)pulls.push(gachaRoll(n===10&&i===n-1&&!pulls.some(p=>p.rar>=2)?2:0));
+  const pulls=[];for(let i=0;i<n;i++)pulls.push(gachaRoll(0));
   for(const j of pulls)if(!S.jets.includes(j.k))S.jets.push(j.k);S.pulls=(S.pulls||0)+n;save();syncPlayer();
   const box=$('gachaBox');box.hidden=false;box.innerHTML='<div class="h1" style="font-size:20px">盲盒開啟中…</div><div class="brand" style="font-size:40px">?</div>';
   let k=0;const iv=setInterval(()=>{const any=JETS[Math.random()*JETS.length|0];box.innerHTML=`<div class="h1" style="font-size:20px">盲盒開啟中…</div><img src="${jetURL(any.k)}" style="width:90px;image-rendering:pixelated">`;beep(300+k*60,.05,'square',.04);k++;
