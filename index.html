@@ -134,6 +134,7 @@ table.lb tr.me td{background:#2A1E5C}
 
   <div id="home" class="ov clear">
     <div class="brand">10K DOG</div>
+    <div class="best" id="ver" style="color:var(--gold2)">BETA 1.3</div>
     <div class="h1">金狗射熊</div>
     <div class="tag">穿越地球・抵達 10K DOG 星</div>
     <div class="wallet"><i class="ci"></i><span id="wCoins">0</span></div>
@@ -314,12 +315,13 @@ const MONS=[
   {k:'wall',name:'交易所維護中',desc:'一面橫向移動的告示牆，擋住你的子彈'},
   {k:'hacker',name:'駭客',desc:'會瞬間移動，每次出現都朝你射一發'},
   {k:'gas',name:'Gas 費火焰',desc:'斜向亂竄的燒錢火球'},
-  {k:'tycoon',name:'關稅大帝',desc:'L5 起偶爾現身。一發推文，全場敵人瘋狂增生，就是要讓你爆倉！打倒他推文就會被刪'},
+  {k:'tycoon',name:'關稅特使',desc:'L5 起偶爾現身。替大帝發推文，全場敵人瘋狂增生，就是要讓你爆倉！打倒他推文就會被刪'},
+  {k:'emperor',name:'關稅大帝（L8 最終 BOSS）',desc:'金髮西裝老人，極難對付：會隱身、開防彈罩、召喚精英敵人，還手持步槍掃射一片難閃的彈幕'},
   {k:'dealer',name:'無敵莊家',desc:'L3 起偶爾降臨：他在場時所有怪物都射不死、子彈會反彈，只能閃開撐過去；每過一關他更快'},
   {k:'mars',name:'Mars（L2 BOSS）',desc:'笑著靠近的「好心 KOL」，送你的禮物全是毒；翻臉後繞圈飛行、丟禮物炸彈、召喚 FUD 幽靈'},
   {k:'bear',name:'熊市大熊（L4 BOSS）',desc:'熊市來襲：橫掃、扇形、圓環三段彈幕'},
   {k:'ninja',name:'神秘刺客（L6 BOSS）',desc:'起初完全不攻擊；打到半血會突然爆發極密集彈幕；剩 25% 會消失並從你背後偷襲，那時打不到他，慢慢閃避等他回到原位再打'},
-  {k:'crab',name:'爆倉蟹貨（L8 最終 BOSS）',desc:'橫行霸道，兩把鉗子連射，半血後會衝下來撞你'},
+  {k:'crab',name:'爆倉蟹貨（L7 BOSS）',desc:'橫行霸道，兩把鉗子連射，半血後會衝下來撞你'},
 ];
 const RANKS=[
   {min:0,cap:'6K',name:'空氣幣',col:'#6E7AA8'},
@@ -334,8 +336,9 @@ function medalHTML(r,size=22){return `<canvas class="medal" data-rank="${r.cap}"
 function drawMedals(){document.querySelectorAll('canvas.medal[data-rank]').forEach(c=>{const r=RANKS.find(x=>x.cap===c.dataset.rank);const g=c.getContext('2d');g.clearRect(0,0,12,14);
   g.fillStyle='#1A0E14';g.fillRect(3,0,6,5);g.fillStyle='#E8453C';g.fillRect(4,0,4,4);g.fillStyle='#1A0E14';g.fillRect(1,4,10,10);g.fillRect(0,5,12,8);g.fillStyle=r.col;g.fillRect(2,5,8,8);g.fillRect(1,6,10,6);g.fillStyle='rgba(255,255,255,.5)';g.fillRect(3,6,2,1);g.fillRect(2,7,1,2);
   const i=RANKS.indexOf(r);g.fillStyle='#1A0E14';for(let k=0;k<Math.min(3,i);k++)g.fillRect(4+k*2,9,1,2)})}
-const LEVELS=8,BOSS_AT={2:'mars',4:'bear',6:'ninja',8:'crab'};
-const LEVEL_SUB={1:'離開地球軌道',2:'一位「熱心」的 KOL',3:'穿越紅K線帶',4:'熊市來襲',5:'Rug Pull 地帶',6:'詭異的寂靜',7:'最後的小行星帶',8:'10K DOG 星軌道：最終決戰'};
+const VERSION='beta 1.3';
+const LEVELS=8,BOSS_AT={2:'mars',4:'bear',6:'ninja',7:'crab',8:'emperor'};
+const LEVEL_SUB={1:'離開地球軌道',2:'一位「熱心」的 KOL',3:'穿越紅K線帶',4:'熊市來襲',5:'Rug Pull 地帶',6:'詭異的寂靜',7:'最後的小行星帶',8:'10K DOG 星軌道：關稅大帝'};
 const STORY=[
   '地球陷入了漫長的熊市。紅K線遮蔽天空，Scam 與 Rug Pull 四處橫行，社區的夥伴一個個爆倉離場。',
   '傳說在遙遠的故鄉「10K DOG 星」，藏著一枚失落的零件——牛市核心。只要把它帶回地球，社區就能重新燃起希望。',
@@ -352,6 +355,8 @@ const DIALOG={
   ninja_dead:[{who:'神秘刺客',text:'從背後下手……居然還是輸了。'},{who:'10K DOG',text:'真正的敵人，往往在你看不見的地方。'}],
   crab_intro:[{who:'爆倉蟹貨',text:'我永不割肉！永不離場！你也別想通過！'},{who:'10K DOG',text:'牛市核心就在你身後。讓開。'}],
   crab_dead:[{who:'爆倉蟹貨',text:'為什麼……你能離場……'},{who:'10K DOG',text:'因為我知道什麼時候該走。'}],
+  emperor_intro:[{who:'關稅大帝',text:'我要讓加密貨幣再次偉大——當然，是「我的」錢包。'},{who:'關稅大帝',text:'關稅！加息！禁幣！所有人，給我爆倉！'},{who:'10K DOG',text:'牛市核心就在你身後。今天我一定要帶它回家。'}],
+  emperor_dead:[{who:'關稅大帝',text:'這是……假新聞……'},{who:'10K DOG',text:'沒有人能永遠操控市場。'}],
   ending:[{who:'10K DOG',text:'拿到了……牛市核心！'},{who:'10K DOG',text:'社區的夥伴們，等我。這次，我們一起迎接牛市。'}],
 };
 
@@ -393,6 +398,7 @@ trojan:pmap(['....KKK.....','...KRRRK....','..KRRRRRKK..','.KRRRRRRRRK.','.KRRWR
 slip:pmap(['..KKKK..','.KRRRRK.','KRWRRWRK','KRRRRRRK','.KRKKRK.','..KRRK..','.KRRRRK.','..KKKK..'],P),
 hammer:pmap(['KKKKKKKKKKKK','KDDDDDDDDDDK','KDSSSSSSSSDK','KDDDDDDDDDDK','KKKKKKKKKKKK','.....KDK....','.....KDK....','.....KDK....','.....KDK....','.....KDK....','.....KKK....'],P),
 wall:pmap(['KKKKKKKKKKKKKKKKKKKKKKKK','KYYYYYYYYYYYYYYYYYYYYYYK','KYKKKKYKKKYKKKYKKKKYYYYK','KYKYYYYKYKYKYKYKYYYKYYYK','KYKKKKYKKKYKKKYKKKKYYYYK','KYYYYYYYYYYYYYYYYYYYYYYK','KKKKKKKKKKKKKKKKKKKKKKKK'],P),
+emperor:pmap(['....KYYYYYYYYK....','...KYYYYYYYYYYK...','..KYYYYYYYYYYYYK..','..KYSSSSSSSSSSYK..','..KSSSSSSSSSSSSK..','..KSSKKSSSSKKSSK..','..KSSSSSSSSSSSSK..','..KSSSSKKKKSSSSK..','...KSSSSSSSSSSK...','....KKKKKKKKKK....','..KKDDDDRRDDDDKK..','.KDDDDDDRRDDDDDDK.','KDDDDDDDRRDDDDDDDK','KDDKDDDDRRDDDDKDDK','KDDKDDDDDDDDDDKDDK','KDDDDDDDDDDDDDDDDK','.KKKKKKKKKKKKKKKK.'],Object.assign({},P,{S:'#F6C8A0',Y:'#F8D860',D:'#1E1448',R:'#E8453C'})),
 tycoon:pmap(['....KKKKKK....','...KYYYYYYK...','..KYYYYYYYYK..','..KSSSSSSSSK..','..KSKKSSKKSK..','..KSSSSSSSSK..','..KSSKKKKSSK..','...KSSSSSSK...','..KKKKKKKKKK..','.KDDDWYYWDDDK.','KDDDDWYYWDDDDK','KDDKDDYYDDKDDK','KDDKDDYYDDKDDK','KDDDDDDDDDDDDK','.KKKKKKKKKKKK.'],Object.assign({},P,{S:'#F6D3BC',Y:'#F8C838',D:'#1E1448'})),
 hacker:pmap(['...KKKKK...','..KDDDDDK..','..KDDDDDK..','.KDKKKKKDK.','.KDGGKGGDK.','..KDDDDDK..','...KDKDK...','..KKDDDKK..','.KDDDDDDDK.','.KDKDDDKDK.','.KDKDDDKDK.','..K.KKK.K..'],P),
 gas:pmap(['....O....','...OOO...','..OYYYO..','..OYWYO..','.OOYYYOO.','.OYYYYYO.','.OOYYYOO.','..OOOOO..','...OOO...'],P),
@@ -428,12 +434,15 @@ function drawDealer(x,y,f){blitImg(img.dealer,x,y);if(f){cx.fillStyle='rgba(255,
 let stars=[],far=[];
 function initBg(){stars=Array.from({length:60},()=>({x:Math.random()*W|0,y:Math.random()*H|0,v:Math.random()*18+8,b:Math.random()<.3}));far=Array.from({length:25},()=>({x:Math.random()*W|0,y:Math.random()*H|0,v:3}))}
 function circle(x,y,r,col){cx.fillStyle=col;for(let yy=-r;yy<=r;yy++){const w=Math.sqrt(r*r-yy*yy)|0;cx.fillRect(x-w,y+yy,w*2,1)}}
+const BG={1:['#0A0720','#14103A','#4A3F7A'],2:['#1A0A1E','#2A1030','#6A3A5A'],3:['#061420','#0A2030','#2A5A6A'],4:['#1A0E08','#2A1810','#6A4A2A'],5:['#08141A','#0A2A26','#2A6A5A'],6:['#050310','#0A0618','#2A2040'],7:['#0E1A3A','#1A2E5A','#4A6A9A'],8:['#2A2A60','#5A4A8A','#B8A060']};
 function drawSpace(dt,prog,dark){
-  cx.fillStyle='#0A0720';cx.fillRect(0,0,W,H);
-  cx.fillStyle='#4A3F7A';for(const s of far){s.y+=s.v*dt;if(s.y>H){s.y=0;s.x=Math.random()*W|0}cx.fillRect(s.x,s.y|0,1,1)}
+  const lv=G?G.lvl:1,c=BG[lv]||BG[1],bright=lv>=7?(lv-6)/2:0;
+  const g=cx.createLinearGradient(0,0,0,H);g.addColorStop(0,c[0]);g.addColorStop(1,c[1]);cx.fillStyle=g;cx.fillRect(0,0,W,H);
+  if(bright>0){cx.fillStyle=`rgba(255,240,176,${bright*.18})`;cx.fillRect(0,0,W,H)}
+  cx.fillStyle=c[2];for(const s of far){s.y+=s.v*dt;if(s.y>H){s.y=0;s.x=Math.random()*W|0}cx.fillRect(s.x,s.y|0,1,1)}
   for(const s of stars){s.y+=s.v*dt;if(s.y>H){s.y=0;s.x=Math.random()*W|0}cx.fillStyle=s.b?'#FFF6E0':'#8C86B8';cx.fillRect(s.x,s.y|0,s.b?2:1,s.b?2:1)}
   // 地球（起點）喺底、10K DOG 星喺頂：隨進度移動
-  const ey=H+40-prog*420;if(ey<H+60){circle(W/2,ey|0,60,'#1E4E8C');circle(W/2-18,ey-30|0,14,'#40D070');circle(W/2+22,ey-20|0,10,'#40D070');circle(W/2+5,ey-45|0,6,'#40D070')}
+  const ey=H+40-prog*420;if(prog<.3&&ey<H+60){circle(W/2,ey|0,60,'#1E4E8C');circle(W/2-18,ey-30|0,14,'#40D070');circle(W/2+22,ey-20|0,10,'#40D070');circle(W/2+5,ey-45|0,6,'#40D070')}
   const py=-60+prog*110,dim=1-dark*.8;if(py>-40){circle(W/2,py|0,26,`rgb(${248*dim|0},${200*dim|0},${56*dim|0})`);circle(W/2-8,py-6|0,5,`rgb(${255*dim|0},${240*dim|0},${176*dim|0})`);
     if(img.coinB&&img.coinB.complete){cx.globalAlpha=dim;cx.drawImage(img.coinB,W/2-9,py-9|0);cx.globalAlpha=1}
     cx.fillStyle='#FFF0B0';cx.font='7px "Press Start 2P",monospace';cx.textAlign='center';cx.fillText('10K DOG',W/2,py+38)}
@@ -496,7 +505,7 @@ function spawnGas(){const dir=Math.random()<.5?1:-1;mkE({t:'gas',x:dir>0?-10:W+1
 function spawnSickle(){const dir=Math.random()<.5?1:-1;mkE({t:'sickle',x:dir>0?-20:W+20,y:rnd(H*.35,H*.7),r:7,hp:4+G.lvl,vx:dir*(70+G.lvl*6),rot:0,score:70,coin:3})}
 function spawnDealer(){const n=G.lvl,sp=(70+n*22);mkE({t:'dealer',x:rnd(30,W-30),y:-20,r:8,hp:1e9,vx:sp*(Math.random()<.5?1:-1),vy:sp*.6,life:9+n,score:0,coin:0})}
 function spawnBoss(kind){
-  const n=G.lvl;G.boss=mkE({t:'boss',kind,x:W/2,y:-50,r:kind==='ninja'?22:kind==='mars'?11:24,hp:(kind==='mars'?120:150)+n*50+(kind==='crab'?120:0)+(kind==='ninja'?80:0),vy:0,ft:2,pat:0,score:400*n,coin:0,phase:0,inv:false,st:0,tt:0});
+  const n=G.lvl;G.boss=mkE({t:'boss',kind,x:W/2,y:-50,r:kind==='ninja'?22:kind==='mars'?11:kind==='emperor'?12:24,hp:(kind==='mars'?120:150)+n*50+(kind==='crab'?120:0)+(kind==='ninja'?80:0)+(kind==='emperor'?420:0),vy:0,ft:2,pat:0,score:400*n,coin:0,phase:0,inv:false,st:0,tt:0});
 }
 function eShot(x,y,ang,sp,k){G.eb.push({x,y,vx:Math.cos(ang)*sp,vy:Math.sin(ang)*sp,k})}
 function aim(e){return Math.atan2(G.p.y-e.y,G.p.x-e.x)}
@@ -596,7 +605,7 @@ function update(dt){
     G.wt+=dt;G.st-=dt;
     if(G.st<=0&&G.wt<20){spawnEnemy();G.st=Math.max(.4,1.4-n*.1)*rnd(.75,1.3)/G.diff}
     if(n>=5&&G.wt<20){G.planeT-=dt;if(G.planeT<=0){spawnPlane();G.planeT=rnd(5,9)-n*.3}}
-    if(n>=5&&!G.tycoonDone&&G.wt<14){G.tycoonT-=dt;if(G.tycoonT<=0){G.tycoonDone=true;if(Math.random()<.75){mkE({t:'tycoon',x:W/2,y:-16,r:8,hp:14+n*3,vy:30,tw:2,score:150,coin:6});floatText(W/2,H*.28,'關稅大帝現身！','#FFF',1);sfx.bad()}}}
+    if(n>=5&&!G.tycoonDone&&G.wt<14){G.tycoonT-=dt;if(G.tycoonT<=0){G.tycoonDone=true;if(Math.random()<.75){mkE({t:'tycoon',x:W/2,y:-16,r:8,hp:14+n*3,vy:30,tw:2,score:150,coin:6});floatText(W/2,H*.28,'關稅特使現身！','#FFF',1);sfx.bad()}}}
     if(G.surge>0){G.surge-=dt;G.st-=dt*1.6}
     if(n>=4&&G.wt<20){G.wallT-=dt;if(G.wallT<=0){spawnWall();G.wallT=rnd(10,14)}}
     if(n>=6&&G.wt<20){G.sickleT-=dt;if(G.sickleT<=0){spawnSickle();G.sickleT=rnd(6,10)-n*.3}}
@@ -697,6 +706,17 @@ function bossAI(e,dt,n){
         else if(hpF<.5&&G.e.filter(x=>x.t==='fud').length<3){for(let i=0;i<2;i++)mkE({t:'fud',x:rnd(20,W-20),bx:rnd(20,W-20),y:-12,r:7,hp:3,vy:30,ph:rnd(0,6),amp:20,ft:1.5,score:20,coin:2});floatText(e.x,e.y+20,'FUD！','#E8453C')}
         e.ft=hpF<.5?.85:1.15}}
     else{e.inv=true}}
+  else if(e.kind==='emperor'){const p=G.p,hpF=e.hp/e.max;e.mode=e.mode||'ak';e.mt=(e.mt||6)-dt;
+    if(e.mt<=0){const seq=['ak','shield','stealth','summon','ak','stealth'];e.si=((e.si||0)+1)%seq.length;e.mode=seq[e.si];e.mt=e.mode==='ak'?5:e.mode==='shield'?4:e.mode==='stealth'?5:3;e.ft=.4;
+      if(e.mode==='summon'){for(const t of[spawnHacker,spawnHammer,spawnHammer]){t()}for(let i=0;i<2;i++)mkE({t:'bomb',x:rnd(30,W-30),bx:rnd(30,W-30),y:-20,r:9,hp:12,vy:20,ph:rnd(0,6),ft:1.5,score:60,coin:5});floatText(e.x,e.y+22,'給我上！','#E8453C',1)}
+      if(e.mode==='stealth'){floatText(e.x,e.y+22,'看不見我了吧？','#8CC8FF');burst(e.x,e.y,'#8CF',12,100)}
+      if(e.mode==='shield')floatText(e.x,e.y+22,'防彈！','#F8C838')}
+    e.inv=e.mode==='shield';e.hidden=e.mode==='stealth';
+    const sp=e.mode==='stealth'?1.9:1;e.x=W/2+Math.sin(G.t*.9*sp)*(W/2-36);e.y=top+Math.sin(G.t*1.7)*18;
+    if(e.mode==='ak'){if(e.ft<=0){const a=aim(e)+rnd(-.35,.35);eShot(e.x-6,e.y+8,a,150+n*4);e.ft=hpF<.5?.07:.1}}
+    else if(e.mode==='stealth'){if(e.ft<=0){const a=aim(e);for(let i=-1;i<=1;i++)eShot(e.x,e.y+8,a+i*.3,120);e.ft=.9}}
+    else if(e.mode==='shield'){if(e.ft<=0){const k=10,o=rnd(0,1);for(let i=0;i<k;i++)eShot(e.x,e.y,o+i/k*Math.PI*2,70);e.ft=.8}}
+    else{if(e.ft<=0){eShot(e.x,e.y+8,aim(e),110);e.ft=.6}}}
   else if(e.kind==='ninja'){const p=G.p,hpF=e.hp/e.max;
     // st: 0 原位(頂部)  1 爆發中  2 消失中  3 背後偷襲  4 返回原位
     if(e.st===0){e.x+=(W/2+Math.sin(G.t*.6)*(W/2-50)-e.x)*Math.min(1,dt*2);e.inv=false;
@@ -724,6 +744,10 @@ function drawBoss(e){
   const x=Math.round(e.x),y=Math.round(e.y),f=e.hf>0;
   if(e.kind==='bear'){cx.save();cx.translate(x,y);cx.scale(3,3);cx.globalAlpha=f?.5:1;cx.drawImage(BEAR,-8,-7);cx.restore();
     cx.fillStyle='#E8453C';cx.fillRect(x-16,y-30,3,3);cx.fillRect(x-13,y-27,3,3);cx.fillRect(x-10,y-30,3,3);cx.fillRect(x-7,y-24,3,3);cx.fillRect(x-4,y-27,3,3);cx.fillRect(x-1,y-21,6,3);cx.fillRect(x+5,y-24,3,3);cx.fillRect(x+8,y-27,3,3)}
+  else if(e.kind==='emperor'){cx.globalAlpha=e.hidden?(.08+Math.abs(Math.sin(G.t*3))*.1):(f?.5:1);cx.drawImage(SPR.emperor,x-9,y-9);
+    cx.fillStyle='#1A0E14';cx.fillRect(x-22,y+2,20,3);cx.fillRect(x-20,y+5,4,4);cx.fillRect(x-8,y+5,3,2); // 步槍
+    if(e.mode==='ak'&&Math.floor(G.t*30)%2){cx.fillStyle='#FFF0B0';cx.fillRect(x-25,y+1,3,5)}
+    if(e.inv){cx.strokeStyle='#F8C838';cx.lineWidth=1;cx.strokeRect(x-14.5,y-14.5,29,29)}cx.globalAlpha=1}
   else if(e.kind==='mars'){cx.globalAlpha=f?.5:1;cx.drawImage(MARS,x-10,y-9);if(e.turned)cx.drawImage(HORN,x-4,y-13);else cx.drawImage(HALO,x-5,y-14);
     if(!e.turned){cx.fillStyle='#40D070';cx.font='7px "Press Start 2P",monospace';cx.textAlign='center';cx.fillText('<3',x+16,y-8)}cx.globalAlpha=1}
   else if(e.kind==='ninja'){if(e.x<-100)return;cx.globalAlpha=e.inv?.55:(f?.5:1);blitImg(img.ninja,e.x,e.y);
@@ -820,6 +844,7 @@ function showLine(){const l=DL.lines[DL.i];$('dlgWho').textContent=l.who;$('dlgT
 function drawPortrait(g,who){
   if(who==='10K DOG'){const i=img['jet_'+S.jet];if(i&&i.complete)g.drawImage(i,0,0,i.naturalWidth,i.naturalHeight,0,0,24,24*i.naturalHeight/i.naturalWidth)}
   else if(who==='Mars'){g.drawImage(MARS,2,3)}
+  else if(who==='關稅大帝'){g.drawImage(SPR.emperor,3,3)}
   else if(who==='熊市大熊'){g.drawImage(BEAR,4,5)}
   else if(who==='神秘刺客'||who==='？？？'){const i=img.ninja;if(i&&i.complete)g.drawImage(i,0,0,48,48,0,0,24,24)}
   else if(who==='爆倉蟹貨'){g.fillStyle='#D8402C';g.fillRect(3,9,18,8);g.fillRect(1,11,2,4);g.fillRect(21,11,2,4);g.fillRect(4,4,4,5);g.fillRect(16,4,4,5);g.fillStyle='#fff';g.fillRect(8,7,3,4);g.fillRect(13,7,3,4);g.fillStyle='#000';g.fillRect(9,8,1,1);g.fillRect(14,8,1,1)}
@@ -872,7 +897,7 @@ function renderGuide(){
     :`<div class="mon" style="opacity:.55"><canvas width="20" height="20" style="background:#0A0620"></canvas><div><b>？？？</b><small>尚未遇到</small></div></div>`).join('');
   document.querySelectorAll('[data-c]').forEach(c=>{const g=c.getContext('2d');g.imageSmoothingEnabled=false;const i=img['L_'+c.dataset.c];const draw=()=>g.drawImage(i,1,1);i.complete?draw():i.onload=draw});
   document.querySelectorAll('[data-m]').forEach(c=>{const g=c.getContext('2d');g.imageSmoothingEnabled=false;const k=c.dataset.m;
-    if(SPR[k]){g.drawImage(SPR[k],Math.round(10-SPR[k].w/2),Math.round(10-SPR[k].h/2))}else if(k==='mars'){g.drawImage(MARS,0,1)}else if(k==='ninja'){const i=img.ninja;const draw=()=>g.drawImage(i,0,0,48,48,0,0,20,20);i.complete?draw():i.onload=draw}else if(k==='bear'||k==='whale'||k==='crab'){g.drawImage(BEAR,2,3)}else if(k==='dealer'){const i=img.dealer;const draw=()=>g.drawImage(i,2,0);i.complete?draw():i.onload=draw}});
+    if(SPR[k]){g.drawImage(SPR[k],Math.round(10-SPR[k].w/2),Math.round(10-SPR[k].h/2))}else if(k==='mars'){g.drawImage(MARS,0,1)}else if(k==='emperor'){g.drawImage(SPR.emperor,1,1)}else if(k==='ninja'){const i=img.ninja;const draw=()=>g.drawImage(i,0,0,48,48,0,0,20,20);i.complete?draw():i.onload=draw}else if(k==='bear'||k==='whale'||k==='crab'){g.drawImage(BEAR,2,3)}else if(k==='dealer'){const i=img.dealer;const draw=()=>g.drawImage(i,2,0);i.complete?draw():i.onload=draw}});
 }
 function renderBoard(){
   const t=$('lbTable');if(!S.lb.length){t.innerHTML='<tr><td>還沒有紀錄，快去打第一場！</td></tr>';return}
@@ -924,7 +949,7 @@ function loop(now){
   if(G&&mode!=='story'){if(mode==='play'){update(dt);if(G)hud()}if(G)render()}else drawHomeBg(dt*.5);
   requestAnimationFrame(loop);
 }
-addEventListener('resize',resize);resize();initSprites();
+$('ver').textContent=VERSION.toUpperCase();addEventListener('resize',resize);resize();initSprites();
 refreshHome();show('home');requestAnimationFrame(loop);
 })();
 </script>
