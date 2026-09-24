@@ -439,7 +439,7 @@ function medalHTML(r,size=22){return `<canvas class="medal" data-rank="${r.cap}"
 function drawMedals(){document.querySelectorAll('canvas.medal[data-rank]').forEach(c=>{const r=RANKS.find(x=>x.cap===c.dataset.rank);const g=c.getContext('2d');g.clearRect(0,0,12,14);
   g.fillStyle='#1A0E14';g.fillRect(3,0,6,5);g.fillStyle='#E8453C';g.fillRect(4,0,4,4);g.fillStyle='#1A0E14';g.fillRect(1,4,10,10);g.fillRect(0,5,12,8);g.fillStyle=r.col;g.fillRect(2,5,8,8);g.fillRect(1,6,10,6);g.fillStyle='rgba(255,255,255,.5)';g.fillRect(3,6,2,1);g.fillRect(2,7,1,2);
   const i=RANKS.indexOf(r);g.fillStyle='#1A0E14';for(let k=0;k<Math.min(3,i);k++)g.fillRect(4+k*2,9,1,2)})}
-const VERSION='beta 3.2';
+const VERSION='beta 3.3';
 /* ---------- Phantom 錢包 ---------- */
 const SOL_RPC='https://solana-rpc.publicnode.com';
 let WAL={addr:null,sol:null};
@@ -631,6 +631,10 @@ const sfx={
   jackpot(){[1046,1318,1568,2093].forEach((f,i)=>setTimeout(()=>beep(f,.4,'square',.07),i*120));setTimeout(()=>boom(.3),400)},
   win(){[523,659,784,1046,784,1046,1318,1568].forEach((f,i)=>setTimeout(()=>beep(f,.25,'square',.06),i*130))},
   thunder(){boom(.3);beep(90,.5,'sawtooth',.08,40)},
+  bhit(hi){const n=performance.now();if(n-(sfx._bh||0)<55)return;sfx._bh=n;beep(hi?520:240,.06,'square',.045,hi?260:120)},
+  clank(){const n=performance.now();if(n-(sfx._ck||0)<70)return;sfx._ck=n;beep(1900,.05,'triangle',.05,950)},
+  cannonHit(){const n=performance.now();if(n-(sfx._ch||0)<110)return;sfx._ch=n;beep(70,.12,'sawtooth',.06,140)},
+  bossDie(){boom(.3);setTimeout(()=>boom(.28),140);setTimeout(()=>boom(.35),300);setTimeout(()=>beep(900,.9,'sawtooth',.07,60),120);setTimeout(()=>boom(.4),520);setTimeout(()=>{[392,523,659,784].forEach((f,i)=>setTimeout(()=>beep(f,.22,'square',.06),i*100))},800)},
 };
 
 /* ---------- 圖 ---------- */
@@ -816,7 +820,7 @@ function lootFrom(e){
 function kill(e){
   G.score+=Math.round(e.score*G.D.score);
   if(e.t==='boss'){const M=GODC[e.kind]||'#F8C838';
-    burst(e.x,e.y,'#E8453C',40,200);burst(e.x,e.y,M,30,160);burst(e.x,e.y,'#fff',20,240);ringFx(e.x,e.y,M,70);ringFx(e.x,e.y,'#fff',40);sfx.big();G.shake=.7;G.flash=Math.max(G.flash,.4);G.freeze=.22;G.eb=[];G.zaps=[];
+    burst(e.x,e.y,'#E8453C',40,200);burst(e.x,e.y,M,30,160);burst(e.x,e.y,'#fff',20,240);ringFx(e.x,e.y,M,70);ringFx(e.x,e.y,'#fff',40);sfx.bossDie();G.shake=.7;G.flash=Math.max(G.flash,.4);G.freeze=.22;G.eb=[];G.zaps=[];
     for(let i=0;i<25;i++)drop('coinB',e.x+rnd(-24,24),e.y+rnd(-16,16));
     lootFrom(e);floatText(e.x,e.y,MONS.find(m=>m.k===e.kind).name.split('（')[0]+' 已擊退！','#40D070',1);G.bossDone=true;
     if(e.kind==='zeus'){G.cine=5;G.ck=0;floatText(W/2,H*.3,'神殿……在崩塌！','#FFE890',1);return}
@@ -895,7 +899,7 @@ function update(dt){
   G.flash=Math.max(0,G.flash-dt*2);
   for(const k in G.buf)if(G.buf[k]>0)G.buf[k]-=dt;
   if(G.ultOn>0){G.ultOn-=dt;
-    if(G.ultKind==='cannon'){const bx=p.x;for(const e of G.e){if(e.t==='dealer'||e.t==='wall')continue;if(Math.abs(e.x-bx)<18&&e.y<p.y){e.hp-=(4+S.up.power)*dt*G.J.dmg*3;e.hf=.05;if(e.hp<=0&&!e.dead){e.dead=true;kill(e)}}}
+    if(G.ultKind==='cannon'){const bx=p.x;for(const e of G.e){if(e.t==='dealer'||e.t==='wall')continue;if(Math.abs(e.x-bx)<18&&e.y<p.y){if(e.t==='boss'){if(e.inv){sfx.clank();continue}sfx.cannonHit()}e.hp-=(4+S.up.power)*dt*G.J.dmg*3;e.hf=.05;if(e.hp<=0&&!e.dead){e.dead=true;kill(e)}}}
       G.eb=G.eb.filter(b=>Math.abs(b.x-bx)>=18||b.y>p.y)}}
   const spd=G.J.spd*(has('slow')?.5:1)*(has('moon')?1.35:1)*(has('spd')?1.3:1);
   let kx=(keys.ArrowRight||keys.d?1:0)-(keys.ArrowLeft||keys.a?1:0),ky=(keys.ArrowDown||keys.s?1:0)-(keys.ArrowUp||keys.w?1:0);
@@ -960,10 +964,10 @@ function update(dt){
     dt=dt0;
     for(const b of G.b){if(b.dead)continue;const dx=b.x-e.x,dy=b.y-e.y,rr=e.r+2;
       if(dx*dx+dy*dy<rr*rr){
-        if(e.t==='wall'||(e.t==='boss'&&e.inv)){b.dead=true;e.hf=.05;continue}
+        if(e.t==='wall'||(e.t==='boss'&&e.inv)){b.dead=true;e.hf=.05;if(e.t==='boss'){sfx.clank();G.fx.push({x:b.x,y:b.y,vx:rnd(-50,50),vy:rnd(-60,0),life:.18,max:.18,col:'#8CC8FF'})}continue}
         if(e.t==='dealer'||curse){b.dead=true;e.hf=.08;eShot(b.x,b.y,aim(e)+rnd(-.3,.3),e.t==='dealer'?150:110);sfx.bounce();continue}
         if(!has('pierce'))b.dead=true;else{if(b.hitId===e)continue;b.hitId=e}
-        e.hp-=b.dmg;e.hf=.07;if(e.t==='boss')G.fx.push({x:b.x,y:b.y,vx:rnd(-70,70),vy:rnd(-90,10),life:.22,max:.22,col:'#FFF0B0'});if(e.hp<=0&&!e.dead){e.dead=true;kill(e);break}}}
+        e.hp-=b.dmg;e.hf=.07;if(e.t==='boss'){sfx.bhit(G.ultOn>0&&G.ultKind==='homing');G.fx.push({x:b.x,y:b.y,vx:rnd(-70,70),vy:rnd(-90,10),life:.22,max:.22,col:'#FFF0B0'})}if(e.hp<=0&&!e.dead){e.dead=true;kill(e);break}}}
     if(!e.dead){const dx=p.x-e.x,dy=p.y-e.y,rr=e.r+6;if(dx*dx+dy*dy<rr*rr){hurt();if(e.t!=='boss'&&e.t!=='dealer'&&e.t!=='wall'){e.dead=true;burst(e.x,e.y,'#E8453C',8,80)}}}
     if(mode!=='play')return;
   }
@@ -982,7 +986,7 @@ function update(dt){
   const mag=(30+S.up.magnet*26)*G.J.mag*(has('magnet')?2.5:1);
   for(const d of G.d){
     d.t+=dt;const dx=p.x-d.x,dy=p.y-d.y,dist=Math.hypot(dx,dy)||1;
-    const pull=d.k==='bad'?mag*.4:d.k==='shiny'?mag*1.5:mag;
+    const pull=d.k==='bad'?0:d.k==='shiny'?mag*1.5:mag;
     if(dist<pull){d.vx=dx/dist*230;d.vy=dy/dist*230}else{d.vy=Math.min(d.vy+130*dt,d.k==='shiny'?30:55);d.vx*=.96}
     d.x+=d.vx*dt;d.y+=d.vy*dt;
     if(d.k==='shiny'&&Math.random()<.5)G.fx.push({x:d.x+rnd(-6,6),y:d.y+rnd(-6,6),vx:0,vy:-10,life:.4,max:.4,col:pick(['#fff','#FFF0B0','#8CF','#F8C'])});
