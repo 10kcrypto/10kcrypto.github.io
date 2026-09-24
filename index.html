@@ -42,6 +42,9 @@ body{background:#000;color:var(--ink);font-family:var(--tc);overflow:hidden;touc
 .wallet{display:flex;gap:8px;align-items:center;font-family:var(--px);font-size:14px;background:#000;border:2px solid var(--gold);padding:8px 14px;color:var(--gold2)}
 .stack{display:flex;flex-direction:column;gap:10px;width:100%;max-width:300px}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.diffs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.diffs button{font:900 12px var(--tc);border:2px solid #000;padding:8px 2px;background:var(--panel);color:var(--mute);box-shadow:2px 2px 0 #000;cursor:pointer}
+.diffs button.sel{color:#000;border-color:#000}
 .btn{font:900 16px var(--tc);letter-spacing:.1em;border:3px solid #000;padding:12px 16px;background:var(--gold);color:#2A1A00;box-shadow:4px 4px 0 #000;cursor:pointer}
 .btn:active{transform:translate(3px,3px);box-shadow:1px 1px 0 #000}
 .btn.big{font-size:20px;padding:14px}
@@ -140,6 +143,7 @@ table.lb tr.me td{background:#2A1E5C}
     <div class="wallet"><i class="ci"></i><span id="wCoins">0</span></div>
     <div class="stack">
       <button id="bPlay" class="btn big blink">PRESS START</button>
+      <div class="diffs" id="diffList"></div>
       <label class="chk" for="boost"><input type="checkbox" id="boost"><span>雙倍金幣（本局 −40 幣）</span></label>
       <button id="bDaily" class="btn green">領取每日獎勵 +100</button>
       <div class="row2">
@@ -231,7 +235,7 @@ function resize(){const r=app.getBoundingClientRect();SC=r.width/IW;H=Math.max(3
 
 /* ---------- 存檔 ---------- */
 const KEY='10kdog_shooter_v3';
-function fresh(){return{coins:500,best:0,up:{power:0,rate:0,hp:0,magnet:0},daily:'',shiny:0,jet:'gold',jets:['gold'],lb:[],seen:[],ult:'homing',introSeen:0}}
+function fresh(){return{coins:500,best:0,up:{power:0,rate:0,hp:0,magnet:0},daily:'',shiny:0,jet:'gold',jets:['gold'],lb:[],seen:[],ult:'homing',introSeen:0,diff:'normal'}}
 let S=fresh();
 try{const o=JSON.parse(localStorage.getItem(KEY)||'null');if(o){S=Object.assign(fresh(),o);S.up=Object.assign(fresh().up,o.up||{})}}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
@@ -336,7 +340,14 @@ function medalHTML(r,size=22){return `<canvas class="medal" data-rank="${r.cap}"
 function drawMedals(){document.querySelectorAll('canvas.medal[data-rank]').forEach(c=>{const r=RANKS.find(x=>x.cap===c.dataset.rank);const g=c.getContext('2d');g.clearRect(0,0,12,14);
   g.fillStyle='#1A0E14';g.fillRect(3,0,6,5);g.fillStyle='#E8453C';g.fillRect(4,0,4,4);g.fillStyle='#1A0E14';g.fillRect(1,4,10,10);g.fillRect(0,5,12,8);g.fillStyle=r.col;g.fillRect(2,5,8,8);g.fillRect(1,6,10,6);g.fillStyle='rgba(255,255,255,.5)';g.fillRect(3,6,2,1);g.fillRect(2,7,1,2);
   const i=RANKS.indexOf(r);g.fillStyle='#1A0E14';for(let k=0;k<Math.min(3,i);k++)g.fillRect(4+k*2,9,1,2)})}
-const VERSION='beta 1.4';
+const VERSION='beta 1.5';
+const DIFFS=[
+  {k:'easy',name:'簡單',hp:.7,sp:.8,rate:.8,bul:.8,score:.7,life:1,col:'#40D070'},
+  {k:'normal',name:'普通',hp:1,sp:1,rate:1,bul:1,score:1,life:0,col:'#58A8F8'},
+  {k:'hard',name:'困難',hp:1.4,sp:1.15,rate:1.3,bul:1.2,score:1.6,life:0,col:'#F8C838'},
+  {k:'hell',name:'老韭菜',hp:2,sp:1.3,rate:1.7,bul:1.4,score:2.5,life:-1,col:'#E8453C'},
+];
+const diffOf=k=>DIFFS.find(d=>d.k===k)||DIFFS[1];
 const FB={key:'AIzaSyC7O7r_dfVcfLW-AfBKuQ1PCTvWf1HTFgM',proj:'kdog-game'};
 const FBBASE=`https://firestore.googleapis.com/v1/projects/${FB.proj}/databases/(default)/documents`;
 async function lbFetch(){const r=await fetch(`${FBBASE}:runQuery?key=${FB.key}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({structuredQuery:{from:[{collectionId:'scores'}],orderBy:[{field:{fieldPath:'s'},direction:'DESCENDING'}],limit:30}})});
@@ -472,21 +483,21 @@ const rnd=(a,b)=>a+Math.random()*(b-a);
 const pick=arr=>arr[Math.random()*arr.length|0];
 function newRun(){
   let mult=1;if($('boost').checked&&S.coins>=40){S.coins-=40;mult=2;save()}$('boost').checked=false;
-  const J=jetOf(S.jet),hp=Math.max(1,3+S.up.hp+J.hp),dbg=/^#L(\d)$/.exec(location.hash);
-  G={J,p:{x:W/2,y:H-60,hp,max:hp,inv:1.5,ft:0},b:[],e:[],eb:[],d:[],fx:[],tx:[],buf:{},shield:0,
+  const D=diffOf(S.diff),J=jetOf(S.jet),hp=Math.max(1,3+S.up.hp+J.hp+D.life),dbg=/^#L(\d)$/.exec(location.hash);
+  G={J,D,p:{x:W/2,y:H-60,hp,max:hp,inv:1.5,ft:0},b:[],e:[],eb:[],d:[],fx:[],tx:[],buf:{},shield:0,
      score:0,coins:0,lvl:1,wt:0,st:1,boss:null,bossDone:false,warn:0,warned:false,mult,revived:false,t:0,banner:2.4,shake:0,candleT:2,freeze:0,flash:0,shinyGot:[],shinyOn:0,dealerT:rnd(4,9),dealerDone:false,portrait:0,planeT:6,sickleT:8,wallT:9,tycoonT:rnd(6,12),tycoonDone:false,surge:0,won:false,ult:0,ultOn:0,diff:1};
   if(dbg)G.lvl=+dbg[1];
 }
 function nextLevel(){if(G.lvl>=LEVELS){win();return}G.lvl++;G.wt=0;G.st=1.2;G.banner=2.4;G.boss=null;G.bossDone=false;G.warned=false;G.warn=0;G.dealerT=rnd(3,8);G.dealerDone=false;G.planeT=5;G.sickleT=7;G.wallT=8;G.tycoonT=rnd(5,11);G.tycoonDone=false;G.surge=0}
 const has=k=>G.buf[k]>0;
-function fireInt(){let f=(.2-S.up.rate*.022)/G.J.rate;if(has('rapid'))f*=.5;if(has('moon'))f*=.75;return f}
+function fireInt(){let f=(.2-S.up.rate*.014)/G.J.rate;if(has('rapid'))f*=.5;if(has('moon'))f*=.75;return f}
 const PAT=[[0],[-4,4],[-6,0,6],[-8,-3,3,8],[-9,-4,0,4,9],[-11,-5,0,5,11]];
 function shoot(){
-  const lv=has('weak')?0:S.up.power,dmg=(1+lv*.2)*G.J.dmg*(has('weak')?.5:1)*(has('dmg')?1.5:1),p=G.p;
+  const lv=has('weak')?0:S.up.power,dmg=(1+lv*.12)*G.J.dmg*(has('weak')?.5:1)*(has('dmg')?1.5:1),p=G.p;
   for(const o of PAT[lv])G.b.push({x:p.x+o,y:p.y-14,vx:lv>=4?o*3:0,vy:-320,dmg});
   if(has('spread')){for(const a of[-1,1]){G.b.push({x:p.x,y:p.y-12,vx:a*110,vy:-290,dmg,g:1});G.b.push({x:p.x,y:p.y-12,vx:a*60,vy:-310,dmg,g:1})}}
 }
-function mkE(o){o.max=o.hp;o.hf=0;G.e.push(o);const k=o.t==='boss'?o.kind:o.t;if(!S.seen.includes(k)){S.seen.push(k);save()}return o}
+function mkE(o){if(o.t!=='dealer'&&o.t!=='wall'){o.hp*=G.D.hp*(1+(G.lvl-1)*.14);if(o.vy)o.vy*=G.D.sp;if(o.vx)o.vx*=G.D.sp}o.max=o.hp;o.hf=0;G.e.push(o);const k=o.t==='boss'?o.kind:o.t;if(!S.seen.includes(k)){S.seen.push(k);save()}return o}
 function spawnEnemy(){
   const n=G.lvl,r=Math.random(),x=rnd(12,W-12);
   if(r<.38)mkE({t:'candle',x,y:-14,r:5,hp:1+n*.25,vy:70+n*6,score:10,coin:1});
@@ -512,9 +523,9 @@ function spawnGas(){const dir=Math.random()<.5?1:-1;mkE({t:'gas',x:dir>0?-10:W+1
 function spawnSickle(){const dir=Math.random()<.5?1:-1;mkE({t:'sickle',x:dir>0?-20:W+20,y:rnd(H*.35,H*.7),r:7,hp:4+G.lvl,vx:dir*(70+G.lvl*6),rot:0,score:70,coin:3})}
 function spawnDealer(){const n=G.lvl,sp=(70+n*22);mkE({t:'dealer',x:rnd(30,W-30),y:-20,r:8,hp:1e9,vx:sp*(Math.random()<.5?1:-1),vy:sp*.6,life:9+n,score:0,coin:0})}
 function spawnBoss(kind){
-  const n=G.lvl;G.boss=mkE({t:'boss',kind,x:W/2,y:-50,r:kind==='ninja'?22:kind==='mars'?11:kind==='emperor'?12:24,hp:(kind==='mars'?120:150)+n*50+(kind==='crab'?120:0)+(kind==='ninja'?80:0)+(kind==='emperor'?420:0),vy:0,ft:2,pat:0,score:400*n,coin:0,phase:0,inv:false,st:0,tt:0});
+  const n=G.lvl;G.boss=mkE({t:'boss',kind,x:W/2,y:-50,r:kind==='ninja'?22:kind==='mars'?11:kind==='emperor'?12:24,hp:(kind==='mars'?120:150)+n*95+(kind==='crab'?120:0)+(kind==='ninja'?80:0)+(kind==='emperor'?420:0),vy:0,ft:2,pat:0,score:400*n,coin:0,phase:0,inv:false,st:0,tt:0});
 }
-function eShot(x,y,ang,sp,k){G.eb.push({x,y,vx:Math.cos(ang)*sp,vy:Math.sin(ang)*sp,k})}
+function eShot(x,y,ang,sp,k){sp*=G.D.bul*(1+(G.lvl-1)*.05);G.eb.push({x,y,vx:Math.cos(ang)*sp,vy:Math.sin(ang)*sp,k})}
 function aim(e){return Math.atan2(G.p.y-e.y,G.p.x-e.x)}
 function burst(x,y,col,n=10,sp=90){for(let i=0;i<n;i++){const a=rnd(0,Math.PI*2),v=rnd(sp*.3,sp);G.fx.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:rnd(.3,.7),max:.7,col})}}
 function floatText(x,y,txt,col,big){G.tx.push({x,y,txt,col,life:big?1.6:.9,big})}
@@ -532,7 +543,7 @@ function lootFrom(e){
   else if(Math.random()<(big?.12:.025))drop('bone',e.x,e.y);
 }
 function kill(e){
-  G.score+=e.score;
+  G.score+=Math.round(e.score*G.D.score);
   if(e.t==='boss'){
     burst(e.x,e.y,'#E8453C',40,200);burst(e.x,e.y,'#F8C838',30,160);sfx.big();G.shake=.6;
     for(let i=0;i<25;i++)drop('coinB',e.x+rnd(-24,24),e.y+rnd(-16,16));
@@ -610,7 +621,7 @@ function update(dt){
   const n=G.lvl,bossKind=BOSS_AT[n];
   if(!bossKind){
     G.wt+=dt;G.st-=dt;
-    if(G.st<=0&&G.wt<20){spawnEnemy();G.st=Math.max(.4,1.4-n*.1)*rnd(.75,1.3)/G.diff}
+    if(G.st<=0&&G.wt<20){spawnEnemy();G.st=Math.max(.32,1.4-n*.13)*rnd(.75,1.3)/G.diff/G.D.rate}
     if(n>=5&&G.wt<20){G.planeT-=dt;if(G.planeT<=0){spawnPlane();G.planeT=rnd(5,9)-n*.3}}
     if(n>=5&&!G.tycoonDone&&G.wt<14){G.tycoonT-=dt;if(G.tycoonT<=0){G.tycoonDone=true;if(Math.random()<.75){mkE({t:'tycoon',x:W/2,y:-16,r:8,hp:14+n*3,vy:30,tw:2,score:150,coin:6});floatText(W/2,H*.28,'關稅特使現身！','#FFF',1);sfx.bad()}}}
     if(G.surge>0){G.surge-=dt;G.st-=dt*1.6}
@@ -834,7 +845,7 @@ function hud(){
   const p=G.p,bufs=Object.keys(G.buf).filter(k=>G.buf[k]>0),key=[S.coins,G.score,G.lvl,p.hp,p.max,bufs.join(),G.shield,G.ult|0,G.ultOn>0].join('|');
   if(key===hudCache)return;hudCache=key;
   const ub=$('bUlt');ub.hidden=false;ub.classList.toggle('ready',G.ult>=100&&G.ultOn<=0);$('ultBar').style.height=Math.min(100,G.ult)+'%';$('ultName').textContent=G.ultOn>0?'發動中':G.ult>=100?'大技！':ultOf(S.ult).name;
-  $('hCoins').textContent=fmt(S.coins);$('hScore').textContent=fmt(G.score);$('hWave').textContent='L'+G.lvl;
+  $('hCoins').textContent=fmt(S.coins);$('hScore').textContent=fmt(G.score);$('hWave').textContent='L'+G.lvl+' '+G.D.name;
   $('hHp').innerHTML=Array.from({length:p.max},(_,i)=>`<i class="${i<p.hp?'':'off'}"></i>`).join('');
   const bad=['slow','weak','dark','narrow'];
   $('hBuff').innerHTML=(G.shield?'<span class="good">BNB 護盾</span>':'')+bufs.map(k=>`<span class="${bad.includes(k)?'bad':'good'}">${BUFF_NAME[k]}</span>`).join('');
@@ -842,7 +853,9 @@ function hud(){
 const OVS=['home','hangar','shop','guide','board','pause','over','story'];
 function show(id){OVS.forEach(k=>$(k).hidden=k!==id);$('hud').hidden=!(id==='play'||id==='pause');$('bUlt').hidden=id!=='play';if(id!=='play')$('dlg').hidden=true}
 function today(){const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()}
-function refreshHome(){$('wCoins').textContent=fmt(S.coins);$('wBest').textContent=fmt(S.best);const r=rankOf(S.best),ni=RANKS.indexOf(r)+1,nx=RANKS[ni];$('wRank').innerHTML=medalHTML(r)+' 市值 '+r.cap+' 的 <b style="color:'+r.col+'">'+r.name+'</b>'+(nx?'<br><span style="color:var(--mute);font-size:11px">再 '+fmt(nx.min-S.best)+' 分升級到 '+nx.cap+' '+nx.name+'</span>':'<br><span style="color:var(--mute);font-size:11px">已是最高等級</span>');drawMedals();$('bDaily').hidden=S.daily===today();$('boost').disabled=S.coins<40;if(S.coins<40)$('boost').checked=false}
+function renderDiffs(){$('diffList').innerHTML=DIFFS.map(d=>`<button data-diff="${d.k}" class="${S.diff===d.k?'sel':''}" style="${S.diff===d.k?'background:'+d.col:''}">${d.name}</button>`).join('')}
+$('diffList').addEventListener('click',e=>{const b=e.target.closest('[data-diff]');if(!b)return;S.diff=b.dataset.diff;save();renderDiffs()});
+function refreshHome(){renderDiffs();$('wCoins').textContent=fmt(S.coins);$('wBest').textContent=fmt(S.best);const r=rankOf(S.best),ni=RANKS.indexOf(r)+1,nx=RANKS[ni];$('wRank').innerHTML=medalHTML(r)+' 市值 '+r.cap+' 的 <b style="color:'+r.col+'">'+r.name+'</b>'+(nx?'<br><span style="color:var(--mute);font-size:11px">再 '+fmt(nx.min-S.best)+' 分升級到 '+nx.cap+' '+nx.name+'</span>':'<br><span style="color:var(--mute);font-size:11px">已是最高等級</span>');drawMedals();$('bDaily').hidden=S.daily===today();$('boost').disabled=S.coins<40;if(S.coins<40)$('boost').checked=false}
 function toast(t){const el=$('toast');el.textContent=t;el.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>el.classList.remove('show'),1600)}
 function goHome(){if(G&&mode!=='over')save();mode='home';G=null;refreshHome();show('home')}
 let DL=null;
@@ -876,7 +889,7 @@ function endScreen(won){
 }
 function gameOver(){endScreen(false)}
 function win(){G.won=true;addCoins(500);sfx.win();dialog(DIALOG.ending,()=>endScreen(true))}
-function submitScore(){const nm=($('nameIn').value||'匿名').trim().slice(0,10);S.lastName=nm;const rec={n:nm,s:G.score,l:G.won?'終點':'L'+G.lvl,r:rankOf(G.score).cap};S.lb.push(Object.assign({d:today()},rec));S.lb.sort((a,b)=>b.s-a.s);S.lb=S.lb.slice(0,10);save();$('bSubmit').disabled=true;G.lbDone=true;
+function submitScore(){const nm=($('nameIn').value||'匿名').trim().slice(0,10);S.lastName=nm;const rec={n:nm,s:G.score,l:(G.won?'終點':'L'+G.lvl)+'·'+G.D.name,r:rankOf(G.score).cap};S.lb.push(Object.assign({d:today()},rec));S.lb.sort((a,b)=>b.s-a.s);S.lb=S.lb.slice(0,10);save();$('bSubmit').disabled=true;G.lbDone=true;
   lbPush(rec).then(()=>toast('已上傳全球排行榜')).catch(()=>toast('已存本機（全球榜上傳失敗）'))}
 function renderShop(){
   $('sCoins').textContent=fmt(S.coins);
