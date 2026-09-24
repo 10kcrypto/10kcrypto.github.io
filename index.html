@@ -150,6 +150,7 @@ table.lb tr.me td{background:#2A1E5C}
       </div>
     </div>
     <div class="best">BEST <span id="wBest">0</span></div>
+    <div class="fine" id="wRank" style="font-size:12px;color:var(--ink)"></div>
     <div class="fine">Demo 版：遊戲幣僅為積分，不是真正的 10K DOG 代幣，無法提領。紀錄只儲存在本機。</div>
   </div>
 
@@ -313,12 +314,26 @@ const MONS=[
   {k:'wall',name:'交易所維護中',desc:'一面橫向移動的告示牆，擋住你的子彈'},
   {k:'hacker',name:'駭客',desc:'會瞬間移動，每次出現都朝你射一發'},
   {k:'gas',name:'Gas 費火焰',desc:'斜向亂竄的燒錢火球'},
+  {k:'tycoon',name:'關稅大帝',desc:'L5 起偶爾現身。一發推文，全場敵人瘋狂增生，就是要讓你爆倉！打倒他推文就會被刪'},
   {k:'dealer',name:'無敵莊家',desc:'L3 起偶爾降臨：他在場時所有怪物都射不死、子彈會反彈，只能閃開撐過去；每過一關他更快'},
   {k:'mars',name:'Mars（L2 BOSS）',desc:'笑著靠近的「好心 KOL」，送你的禮物全是毒；翻臉後繞圈飛行、丟禮物炸彈、召喚 FUD 幽靈'},
   {k:'bear',name:'熊市大熊（L4 BOSS）',desc:'熊市來襲：橫掃、扇形、圓環三段彈幕'},
   {k:'ninja',name:'神秘刺客（L6 BOSS）',desc:'起初完全不攻擊；打到半血會突然爆發極密集彈幕；剩 25% 會消失並從你背後偷襲，那時打不到他，慢慢閃避等他回到原位再打'},
   {k:'crab',name:'爆倉蟹貨（L8 最終 BOSS）',desc:'橫行霸道，兩把鉗子連射，半血後會衝下來撞你'},
 ];
+const RANKS=[
+  {min:0,cap:'6K',name:'空氣幣',col:'#6E7AA8'},
+  {min:2000,cap:'100K',name:'小土狗',col:'#C8823A'},
+  {min:8000,cap:'1M',name:'社區幣',col:'#C8D0E0'},
+  {min:20000,cap:'10M',name:'新銳幣',col:'#F8C838'},
+  {min:50000,cap:'100M',name:'主流幣',col:'#8CC8FF'},
+  {min:120000,cap:'1B',name:'藍籌幣',col:'#FF8FB8'},
+];
+const rankOf=s=>{let r=RANKS[0];for(const x of RANKS)if(s>=x.min)r=x;return r};
+function medalHTML(r,size=22){return `<canvas class="medal" data-rank="${r.cap}" width="12" height="14" style="width:${size}px;height:${size*14/12|0}px;image-rendering:pixelated;vertical-align:middle"></canvas>`}
+function drawMedals(){document.querySelectorAll('canvas.medal[data-rank]').forEach(c=>{const r=RANKS.find(x=>x.cap===c.dataset.rank);const g=c.getContext('2d');g.clearRect(0,0,12,14);
+  g.fillStyle='#1A0E14';g.fillRect(3,0,6,5);g.fillStyle='#E8453C';g.fillRect(4,0,4,4);g.fillStyle='#1A0E14';g.fillRect(1,4,10,10);g.fillRect(0,5,12,8);g.fillStyle=r.col;g.fillRect(2,5,8,8);g.fillRect(1,6,10,6);g.fillStyle='rgba(255,255,255,.5)';g.fillRect(3,6,2,1);g.fillRect(2,7,1,2);
+  const i=RANKS.indexOf(r);g.fillStyle='#1A0E14';for(let k=0;k<Math.min(3,i);k++)g.fillRect(4+k*2,9,1,2)})}
 const LEVELS=8,BOSS_AT={2:'mars',4:'bear',6:'ninja',8:'crab'};
 const LEVEL_SUB={1:'離開地球軌道',2:'一位「熱心」的 KOL',3:'穿越紅K線帶',4:'熊市來襲',5:'Rug Pull 地帶',6:'詭異的寂靜',7:'最後的小行星帶',8:'10K DOG 星軌道：最終決戰'};
 const STORY=[
@@ -378,6 +393,7 @@ trojan:pmap(['....KKK.....','...KRRRK....','..KRRRRRKK..','.KRRRRRRRRK.','.KRRWR
 slip:pmap(['..KKKK..','.KRRRRK.','KRWRRWRK','KRRRRRRK','.KRKKRK.','..KRRK..','.KRRRRK.','..KKKK..'],P),
 hammer:pmap(['KKKKKKKKKKKK','KDDDDDDDDDDK','KDSSSSSSSSDK','KDDDDDDDDDDK','KKKKKKKKKKKK','.....KDK....','.....KDK....','.....KDK....','.....KDK....','.....KDK....','.....KKK....'],P),
 wall:pmap(['KKKKKKKKKKKKKKKKKKKKKKKK','KYYYYYYYYYYYYYYYYYYYYYYK','KYKKKKYKKKYKKKYKKKKYYYYK','KYKYYYYKYKYKYKYKYYYKYYYK','KYKKKKYKKKYKKKYKKKKYYYYK','KYYYYYYYYYYYYYYYYYYYYYYK','KKKKKKKKKKKKKKKKKKKKKKKK'],P),
+tycoon:pmap(['....KKKKKK....','...KYYYYYYK...','..KYYYYYYYYK..','..KSSSSSSSSK..','..KSKKSSKKSK..','..KSSSSSSSSK..','..KSSKKKKSSK..','...KSSSSSSK...','..KKKKKKKKKK..','.KDDDWYYWDDDK.','KDDDDWYYWDDDDK','KDDKDDYYDDKDDK','KDDKDDYYDDKDDK','KDDDDDDDDDDDDK','.KKKKKKKKKKKK.'],Object.assign({},P,{S:'#F6D3BC',Y:'#F8C838',D:'#1E1448'})),
 hacker:pmap(['...KKKKK...','..KDDDDDK..','..KDDDDDK..','.KDKKKKKDK.','.KDGGKGGDK.','..KDDDDDK..','...KDKDK...','..KKDDDKK..','.KDDDDDDDK.','.KDKDDDKDK.','.KDKDDDKDK.','..K.KKK.K..'],P),
 gas:pmap(['....O....','...OOO...','..OYYYO..','..OYWYO..','.OOYYYOO.','.OYYYYYO.','.OOYYYOO.','..OOOOO..','...OOO...'],P),
 sickle:pmap([
@@ -417,7 +433,7 @@ function drawSpace(dt,prog,dark){
   cx.fillStyle='#4A3F7A';for(const s of far){s.y+=s.v*dt;if(s.y>H){s.y=0;s.x=Math.random()*W|0}cx.fillRect(s.x,s.y|0,1,1)}
   for(const s of stars){s.y+=s.v*dt;if(s.y>H){s.y=0;s.x=Math.random()*W|0}cx.fillStyle=s.b?'#FFF6E0':'#8C86B8';cx.fillRect(s.x,s.y|0,s.b?2:1,s.b?2:1)}
   // 地球（起點）喺底、10K DOG 星喺頂：隨進度移動
-  const ey=H+40-prog*170;if(ey<H+60){circle(W/2,ey|0,60,'#1E4E8C');circle(W/2-18,ey-30|0,14,'#40D070');circle(W/2+22,ey-20|0,10,'#40D070');circle(W/2+5,ey-45|0,6,'#40D070')}
+  const ey=H+40-prog*420;if(ey<H+60){circle(W/2,ey|0,60,'#1E4E8C');circle(W/2-18,ey-30|0,14,'#40D070');circle(W/2+22,ey-20|0,10,'#40D070');circle(W/2+5,ey-45|0,6,'#40D070')}
   const py=-60+prog*110,dim=1-dark*.8;if(py>-40){circle(W/2,py|0,26,`rgb(${248*dim|0},${200*dim|0},${56*dim|0})`);circle(W/2-8,py-6|0,5,`rgb(${255*dim|0},${240*dim|0},${176*dim|0})`);
     if(img.coinB&&img.coinB.complete){cx.globalAlpha=dim;cx.drawImage(img.coinB,W/2-9,py-9|0);cx.globalAlpha=1}
     cx.fillStyle='#FFF0B0';cx.font='7px "Press Start 2P",monospace';cx.textAlign='center';cx.fillText('10K DOG',W/2,py+38)}
@@ -442,10 +458,10 @@ function newRun(){
   let mult=1;if($('boost').checked&&S.coins>=40){S.coins-=40;mult=2;save()}$('boost').checked=false;
   const J=jetOf(S.jet),hp=Math.max(1,3+S.up.hp+J.hp),dbg=/^#L(\d)$/.exec(location.hash);
   G={J,p:{x:W/2,y:H-60,hp,max:hp,inv:1.5,ft:0},b:[],e:[],eb:[],d:[],fx:[],tx:[],buf:{},shield:0,
-     score:0,coins:0,lvl:1,wt:0,st:1,boss:null,bossDone:false,warn:0,warned:false,mult,revived:false,t:0,banner:2.4,shake:0,candleT:2,freeze:0,flash:0,shinyGot:[],shinyOn:0,dealerT:rnd(4,9),dealerDone:false,portrait:0,planeT:6,sickleT:8,wallT:9,won:false,ult:0,ultOn:0,diff:1};
+     score:0,coins:0,lvl:1,wt:0,st:1,boss:null,bossDone:false,warn:0,warned:false,mult,revived:false,t:0,banner:2.4,shake:0,candleT:2,freeze:0,flash:0,shinyGot:[],shinyOn:0,dealerT:rnd(4,9),dealerDone:false,portrait:0,planeT:6,sickleT:8,wallT:9,tycoonT:rnd(6,12),tycoonDone:false,surge:0,won:false,ult:0,ultOn:0,diff:1};
   if(dbg)G.lvl=+dbg[1];
 }
-function nextLevel(){if(G.lvl>=LEVELS){win();return}G.lvl++;G.wt=0;G.st=1.2;G.banner=2.4;G.boss=null;G.bossDone=false;G.warned=false;G.warn=0;G.dealerT=rnd(3,8);G.dealerDone=false;G.planeT=5;G.sickleT=7;G.wallT=8}
+function nextLevel(){if(G.lvl>=LEVELS){win();return}G.lvl++;G.wt=0;G.st=1.2;G.banner=2.4;G.boss=null;G.bossDone=false;G.warned=false;G.warn=0;G.dealerT=rnd(3,8);G.dealerDone=false;G.planeT=5;G.sickleT=7;G.wallT=8;G.tycoonT=rnd(5,11);G.tycoonDone=false;G.surge=0}
 const has=k=>G.buf[k]>0;
 function fireInt(){let f=(.2-S.up.rate*.022)/G.J.rate;if(has('rapid'))f*=.5;if(has('moon'))f*=.75;return f}
 const PAT=[[0],[-4,4],[-6,0,6],[-8,-3,3,8],[-9,-4,0,4,9],[-11,-5,0,5,11]];
@@ -507,6 +523,7 @@ function kill(e){
     lootFrom(e);floatText(e.x,e.y,MONS.find(m=>m.k===e.kind).name.split('（')[0]+' 已擊退！','#40D070',1);G.bossDone=true;
     const dd=DIALOG[e.kind+'_dead'];setTimeout(()=>{if(G&&G.bossDone&&mode==='play'){if(dd)dialog(dd,nextLevel);else nextLevel()}},1400);
   }else{burst(e.x,e.y,e.t==='candle'||e.t==='wick'?'#E8453C':'#F2B0A0',e.t==='bomb'?18:8,e.t==='bomb'?140:90);sfx.pop();lootFrom(e);
+    if(e.t==='tycoon'){G.surge=0;floatText(e.x,e.y,'推文已刪除','#40D070',1)}
     if(e.t==='trojan')for(let i=-1;i<=1;i++)mkE({t:'candle',x:e.x+i*12,y:e.y,r:5,hp:1,vy:90,score:10,coin:1})}
 }
 function hurt(){
@@ -579,6 +596,8 @@ function update(dt){
     G.wt+=dt;G.st-=dt;
     if(G.st<=0&&G.wt<20){spawnEnemy();G.st=Math.max(.4,1.4-n*.1)*rnd(.75,1.3)/G.diff}
     if(n>=5&&G.wt<20){G.planeT-=dt;if(G.planeT<=0){spawnPlane();G.planeT=rnd(5,9)-n*.3}}
+    if(n>=5&&!G.tycoonDone&&G.wt<14){G.tycoonT-=dt;if(G.tycoonT<=0){G.tycoonDone=true;if(Math.random()<.75){mkE({t:'tycoon',x:W/2,y:-16,r:8,hp:14+n*3,vy:30,tw:2,score:150,coin:6});floatText(W/2,H*.28,'關稅大帝現身！','#FFF',1);sfx.bad()}}}
+    if(G.surge>0){G.surge-=dt;G.st-=dt*1.6}
     if(n>=4&&G.wt<20){G.wallT-=dt;if(G.wallT<=0){spawnWall();G.wallT=rnd(10,14)}}
     if(n>=6&&G.wt<20){G.sickleT-=dt;if(G.sickleT<=0){spawnSickle();G.sickleT=rnd(6,10)-n*.3}}
     if(G.wt>=20&&!G.e.some(e=>e.t!=='dealer'))nextLevel();
@@ -616,6 +635,8 @@ function update(dt){
     else if(e.t==='wall'){e.x+=e.vx*dt;e.life-=dt;if(e.x<-40||e.x>W+40||e.life<=0)e.dead=true}
     else if(e.t==='hacker'){e.tp-=dt;if(e.tp<=0){burst(e.x,e.y,'#40D070',8,100);e.x=rnd(20,W-20);e.y=rnd(30,H*.45);e.tp=1.4;e.n++;eShot(e.x,e.y+6,aim(e),120+n*3);if(e.n>=6){e.dead=true;burst(e.x,e.y,'#40D070',10,120)}}}
     else if(e.t==='gas'){e.x+=e.vx*dt;e.y+=e.vy*dt;if(e.x<-20||e.x>W+20)e.dead=true}
+    else if(e.t==='tycoon'){if(e.y<40)e.y+=e.vy*dt;e.x=W/2+Math.sin(G.t*.8)*(W/2-40);e.tw-=dt;
+      if(e.tw<=0){e.tw=5;G.surge=4;G.shake=.3;sfx.siren();floatText(e.x,e.y+22,pick(['推文：全面加關稅！','推文：加息 100 點！','推文：禁掉所有幣！']),'#E8453C',1);for(let i=0;i<6;i++)mkE({t:'candle',x:rnd(12,W-12),y:-14-i*10,r:5,hp:1,vy:120,score:10,coin:1});for(let i=0;i<2;i++)mkE({t:'fud',x:rnd(20,W-20),bx:rnd(20,W-20),y:-12,r:7,hp:2+n*.5,vy:30,ph:rnd(0,6),amp:20,ft:2,score:20,coin:2})}}
     else if(e.t==='dealer'){e.x+=e.vx*dt;e.y+=e.vy*dt;e.life-=dt;
       if(e.x<12||e.x>W-12){e.vx*=-1;e.x=Math.min(Math.max(e.x,12),W-12)}if(e.y>H*.75||e.y<20)e.vy*=-1;
       if(e.life<=0){e.dead=true;floatText(e.x,e.y,'莊家走了','#A89CD8')}}
@@ -790,7 +811,7 @@ function hud(){
 const OVS=['home','hangar','shop','guide','board','pause','over','story'];
 function show(id){OVS.forEach(k=>$(k).hidden=k!==id);$('hud').hidden=!(id==='play'||id==='pause');$('bUlt').hidden=id!=='play';if(id!=='play')$('dlg').hidden=true}
 function today(){const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()}
-function refreshHome(){$('wCoins').textContent=fmt(S.coins);$('wBest').textContent=fmt(S.best);$('bDaily').hidden=S.daily===today();$('boost').disabled=S.coins<40;if(S.coins<40)$('boost').checked=false}
+function refreshHome(){$('wCoins').textContent=fmt(S.coins);$('wBest').textContent=fmt(S.best);const r=rankOf(S.best),ni=RANKS.indexOf(r)+1,nx=RANKS[ni];$('wRank').innerHTML=medalHTML(r)+' 市值 '+r.cap+' 的 <b style="color:'+r.col+'">'+r.name+'</b>'+(nx?'<br><span style="color:var(--mute);font-size:11px">再 '+fmt(nx.min-S.best)+' 分升級到 '+nx.cap+' '+nx.name+'</span>':'<br><span style="color:var(--mute);font-size:11px">已是最高等級</span>');drawMedals();$('bDaily').hidden=S.daily===today();$('boost').disabled=S.coins<40;if(S.coins<40)$('boost').checked=false}
 function toast(t){const el=$('toast');el.textContent=t;el.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>el.classList.remove('show'),1600)}
 function goHome(){if(G&&mode!=='over')save();mode='home';G=null;refreshHome();show('home')}
 let DL=null;
@@ -815,7 +836,8 @@ function resume(){mode='play';show('play');last=performance.now()}
 function endScreen(won){
   mode='over';const nb=G.score>S.best;if(nb)S.best=G.score;save();
   $('oTitle').textContent=won?'抵達 10K DOG 星！':'爆倉！';$('oTitle').style.color=won?'var(--green)':'var(--red)';
-  $('oScore').textContent=fmt(G.score);$('oCoins').textContent='+'+fmt(G.coins);$('oWave').textContent=won?'終點':'L'+G.lvl;$('oNew').hidden=!nb;
+  $('oScore').textContent=fmt(G.score);$('oCoins').textContent='+'+fmt(G.coins);$('oWave').textContent=won?'終點':'L'+G.lvl;
+  const rk=rankOf(G.score);$('oNew').hidden=false;$('oNew').innerHTML=(nb?'NEW RECORD · ':'')+medalHTML(rk,16)+' 市值 '+rk.cap+' '+rk.name;setTimeout(drawMedals,0);
   $('oShiny').hidden=!G.shinyGot.length;$('oShiny').textContent='✦ 本局獲得閃光幣：'+G.shinyGot.join('、')+'（截圖炫耀一下）';
   const qualifies=S.lb.length<10||G.score>S.lb[S.lb.length-1].s;$('nameBox').hidden=!qualifies||G.score<=0;$('nameIn').value=S.lastName||'';$('bSubmit').disabled=false;
   show('over');
@@ -854,7 +876,7 @@ function renderGuide(){
 }
 function renderBoard(){
   const t=$('lbTable');if(!S.lb.length){t.innerHTML='<tr><td>還沒有紀錄，快去打第一場！</td></tr>';return}
-  t.innerHTML=S.lb.map((r,i)=>`<tr class="${G&&G.lbDone&&r.s===G.score&&r.n===S.lastName?'me':''}"><td class="n">${i+1}</td><td>${esc(r.n)}</td><td style="color:var(--mute);font-size:11px">${r.l}</td><td class="s">${fmt(r.s)}</td></tr>`).join('');
+  t.innerHTML=S.lb.map((r,i)=>{const rk=rankOf(r.s);return `<tr class="${G&&G.lbDone&&r.s===G.score&&r.n===S.lastName?'me':''}"><td class="n">${i+1}</td><td>${medalHTML(rk,16)} ${esc(r.n)}<br><span style="font-size:10px;color:${rk.col}">${rk.cap} ${rk.name}</span></td><td style="color:var(--mute);font-size:11px">${r.l}</td><td class="s">${fmt(r.s)}</td></tr>`}).join('');drawMedals();
 }
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 $('upList').addEventListener('click',e=>{const b=e.target.closest('[data-up]');if(!b)return;const u=UPS.find(x=>x.k===b.dataset.up),lv=S.up[u.k];
