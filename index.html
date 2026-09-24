@@ -23,6 +23,7 @@ body{background:#000;color:var(--ink);font-family:var(--tc);overflow:hidden;touc
 #hud .top{display:flex;align-items:center;gap:8px}
 #hCoins{color:var(--gold2)}#hWave{color:var(--mute)}
 #hScore{margin-left:auto;font-size:12px;color:#fff}
+#bBgm1{pointer-events:auto;width:auto;padding:0 6px;height:26px;border:2px solid var(--ink);background:var(--panel);color:var(--ink);font:8px var(--px);cursor:pointer;box-shadow:2px 2px 0 #000;margin-right:6px}
 #bPause{pointer-events:auto;width:30px;height:26px;border:2px solid var(--ink);background:var(--panel);color:var(--ink);font:8px var(--px);cursor:pointer;box-shadow:2px 2px 0 #000}
 #hHp{display:flex;gap:3px}
 #hHp i{width:10px;height:10px;background:var(--red);box-shadow:inset -2px -2px 0 #8C1A14}
@@ -128,7 +129,7 @@ table.lb tr.me td{background:#2A1E5C}
       <span><i class="ci"></i> <span id="hCoins">0</span></span>
       <span id="hWave">L1</span>
       <span id="hScore">0</span>
-      <button id="bPause" aria-label="暫停">II</button>
+      <button class="bgmBtn" id="bBgm1" aria-label="音樂">♪ ON</button><button id="bPause" aria-label="暫停">II</button>
     </div>
     <div id="hHp"></div>
     <div id="hBuff"></div>
@@ -138,6 +139,7 @@ table.lb tr.me td{background:#2A1E5C}
   <div id="home" class="ov clear">
     <div class="brand">10K DOG</div>
     <div class="best" id="ver" style="color:var(--gold2)">BETA 1.3</div>
+    <button class="bgmBtn btn small ghost" id="bBgm0" style="position:absolute;top:10px;right:10px;padding:6px 8px">♪ ON</button>
     <div class="h1">金狗射熊</div>
     <div class="tag">穿越地球・抵達 10K DOG 星</div>
     <div class="wallet"><i class="ci"></i><span id="wCoins">0</span></div>
@@ -439,7 +441,7 @@ function medalHTML(r,size=22){return `<canvas class="medal" data-rank="${r.cap}"
 function drawMedals(){document.querySelectorAll('canvas.medal[data-rank]').forEach(c=>{const r=RANKS.find(x=>x.cap===c.dataset.rank);const g=c.getContext('2d');g.clearRect(0,0,12,14);
   g.fillStyle='#1A0E14';g.fillRect(3,0,6,5);g.fillStyle='#E8453C';g.fillRect(4,0,4,4);g.fillStyle='#1A0E14';g.fillRect(1,4,10,10);g.fillRect(0,5,12,8);g.fillStyle=r.col;g.fillRect(2,5,8,8);g.fillRect(1,6,10,6);g.fillStyle='rgba(255,255,255,.5)';g.fillRect(3,6,2,1);g.fillRect(2,7,1,2);
   const i=RANKS.indexOf(r);g.fillStyle='#1A0E14';for(let k=0;k<Math.min(3,i);k++)g.fillRect(4+k*2,9,1,2)})}
-const VERSION='beta 3.3';
+const VERSION='beta 3.4';
 /* ---------- Phantom 錢包 ---------- */
 const SOL_RPC='https://solana-rpc.publicnode.com';
 let WAL={addr:null,sol:null};
@@ -637,6 +639,57 @@ const sfx={
   bossDie(){boom(.3);setTimeout(()=>boom(.28),140);setTimeout(()=>boom(.35),300);setTimeout(()=>beep(900,.9,'sawtooth',.07,60),120);setTimeout(()=>boom(.4),520);setTimeout(()=>{[392,523,659,784].forEach((f,i)=>setTimeout(()=>beep(f,.22,'square',.06),i*100))},800)},
 };
 
+
+/* ---------- BGM：chiptune 音序器 ---------- */
+// 音符：MIDI 編號，0=休止。每首歌：bpm、lead（方波）、lead2（和聲）、bass（三角波）、drum（k=kick s=snare h=hat .=無）
+const SONGS={
+  home:{bpm:104,lead:[69,0,72,0,76,0,72,0,71,0,69,0,67,0,69,0, 65,0,69,0,72,0,69,0,67,0,65,0,64,0,0,0, 69,0,72,0,76,0,79,0,77,0,76,0,72,0,71,0, 72,0,0,0,69,0,0,0,67,0,69,0,0,0,0,0],
+    bass:[45,0,45,0,52,0,45,0,41,0,41,0,48,0,41,0, 38,0,38,0,45,0,38,0,40,0,40,0,47,0,40,0, 45,0,45,0,52,0,45,0,41,0,41,0,48,0,41,0, 38,0,38,0,45,0,38,0,40,0,40,0,47,0,43,0],
+    drum:'k.h.s.h.k.h.s.h.k.h.s.h.k.h.s.hhk.h.s.h.k.h.s.h.k.h.s.h.k.h.s.h.'},
+  main:{bpm:132,lead:[64,64,0,67,0,71,0,67,69,0,67,0,64,0,62,0, 64,64,0,67,0,71,0,74,72,0,71,0,69,0,67,0, 65,65,0,69,0,72,0,69,71,0,69,0,65,0,64,0, 62,0,64,0,65,0,67,0,69,0,71,0,72,0,0,0],
+    lead2:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 57,0,0,0,60,0,0,0,62,0,0,0,57,0,0,0, 55,0,0,0,57,0,0,0,60,0,0,0,64,0,0,0],
+    bass:[40,0,40,40,0,40,0,40,45,0,45,45,0,45,0,45, 40,0,40,40,0,40,0,40,43,0,43,43,0,43,0,43, 38,0,38,38,0,38,0,38,41,0,41,41,0,41,0,41, 35,0,35,35,0,35,0,35,43,0,43,43,0,43,0,43],
+    drum:'k.h.s.hhk.h.s.h.k.h.s.hhk.h.s.hhk.h.s.hhk.h.s.h.k.h.s.hhk.s.s.ss'},
+  boss:{bpm:156,lead:[62,0,62,65,0,62,0,69,0,68,0,65,0,62,0,0, 62,0,62,65,0,62,0,70,0,69,0,68,0,65,0,0, 74,0,73,0,72,0,70,0,69,0,68,0,65,0,62,0, 60,0,62,0,65,0,68,0,69,0,0,0,0,0,0,0],
+    lead2:[50,0,0,0,53,0,0,0,50,0,0,0,53,0,0,0, 50,0,0,0,53,0,0,0,50,0,0,0,53,0,0,0, 58,0,0,0,57,0,0,0,56,0,0,0,53,0,0,0, 48,0,0,0,50,0,0,0,53,0,0,0,56,0,0,0],
+    bass:[38,38,0,38,38,0,38,0,38,38,0,38,38,0,41,0, 38,38,0,38,38,0,38,0,38,38,0,38,38,0,37,0, 34,34,0,34,34,0,34,0,36,36,0,36,36,0,36,0, 33,33,0,33,33,0,33,0,38,0,0,0,0,0,0,0],
+    drum:'kkh.s.h.k.h.s.hhkkh.s.h.k.h.s.sskkh.s.h.k.h.s.hhkkh.s.h.k.s.s.ss'},
+  myth:{bpm:118,lead:[64,0,0,67,0,0,71,0,69,0,0,67,0,0,64,0, 62,0,0,64,0,0,67,0,64,0,0,0,0,0,0,0, 64,0,0,67,0,0,71,0,74,0,0,72,0,0,71,0, 69,0,0,67,0,0,64,0,66,0,0,0,0,0,0,0],
+    lead2:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 60,0,0,0,0,0,0,0,62,0,0,0,0,0,0,0, 57,0,0,0,0,0,0,0,59,0,0,0,0,0,0,0],
+    bass:[40,0,0,40,0,0,47,0,40,0,0,40,0,0,47,0, 38,0,0,38,0,0,45,0,38,0,0,38,0,0,45,0, 36,0,0,36,0,0,43,0,36,0,0,36,0,0,43,0, 38,0,0,38,0,0,45,0,42,0,0,42,0,0,42,0],
+    drum:'k..h..s.k..h..s.k..h..s.k..h..sss..h..s.k..h..s.k..h..s.k..h.sss'},
+  zeus:{bpm:168,lead:[69,0,69,0,72,0,69,0,76,0,75,0,72,0,69,0, 68,0,68,0,71,0,68,0,76,0,75,0,71,0,68,0, 77,0,76,0,75,0,72,0,69,0,68,0,65,0,64,0, 65,0,68,0,69,0,72,0,75,0,76,0,81,0,0,0],
+    lead2:[57,0,0,0,60,0,0,0,57,0,0,0,60,0,0,0, 56,0,0,0,59,0,0,0,56,0,0,0,59,0,0,0, 65,0,0,0,64,0,0,0,63,0,0,0,60,0,0,0, 53,0,0,0,56,0,0,0,57,0,0,0,69,0,0,0],
+    bass:[33,33,0,33,0,33,33,0,33,33,0,33,0,33,33,0, 32,32,0,32,0,32,32,0,32,32,0,32,0,32,32,0, 29,29,0,29,0,29,29,0,31,31,0,31,0,31,31,0, 34,34,0,34,0,34,34,0,33,0,0,0,0,0,0,0],
+    drum:'kkh.s.hhkkh.s.hhkkh.s.hhkkh.s.sskkh.s.hhkkh.s.hhkkh.s.hhk.s.s.ss'},
+  win:{bpm:120,lead:[72,0,72,0,72,0,76,0,79,0,0,0,76,0,79,0, 84,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    bass:[48,0,48,0,48,0,52,0,55,0,0,0,52,0,55,0, 60,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+    drum:'k.h.k.h.k.h.k.h.k...............................................'},
+};
+const BGM={name:null,step:0,next:0,timer:null,gain:null,noise:null,on:S.bgm!==0,vol:.5};
+function bgmInit(){if(BGM.gain||!AC)return;BGM.gain=AC.createGain();BGM.gain.gain.value=BGM.on?BGM.vol:0;BGM.gain.connect(AC.destination);
+  const n=AC.sampleRate*.5,b=AC.createBuffer(1,n,AC.sampleRate),a=b.getChannelData(0);for(let i=0;i<n;i++)a[i]=Math.random()*2-1;BGM.noise=b}
+const mtof=m=>440*Math.pow(2,(m-69)/12);
+function bgmNote(m,t,d,type,v,det){const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.value=mtof(m);if(det)o.detune.value=det;g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(BGM.gain);o.start(t);o.stop(t+d+.02)}
+function bgmDrum(c,t){if(c==='.')return;const src=AC.createBufferSource();src.buffer=BGM.noise;const g=AC.createGain(),f=AC.createBiquadFilter();
+  if(c==='k'){const o=AC.createOscillator(),og=AC.createGain();o.frequency.setValueAtTime(150,t);o.frequency.exponentialRampToValueAtTime(40,t+.12);og.gain.setValueAtTime(.5,t);og.gain.exponentialRampToValueAtTime(.001,t+.14);o.connect(og);og.connect(BGM.gain);o.start(t);o.stop(t+.16);return}
+  f.type=c==='h'?'highpass':'bandpass';f.frequency.value=c==='h'?7000:1800;g.gain.setValueAtTime(c==='h'?.12:.3,t);g.gain.exponentialRampToValueAtTime(.001,t+(c==='h'?.04:.12));src.connect(f);f.connect(g);g.connect(BGM.gain);src.start(t);src.stop(t+.15)}
+function bgmTick(){if(!AC||!BGM.name)return;const sg=SONGS[BGM.name],sd=60/sg.bpm/4;
+  while(BGM.next<AC.currentTime+.12){const i=BGM.step%sg.lead.length,t=BGM.next;
+    const L=sg.lead[i];if(L)bgmNote(L,t,sd*1.6,'square',.07);
+    const L2=sg.lead2&&sg.lead2[i];if(L2)bgmNote(L2,t,sd*3,'square',.035,-6);
+    const B=sg.bass[i];if(B)bgmNote(B,t,sd*1.2,'triangle',.16);
+    bgmDrum(sg.drum[i%sg.drum.length],t);
+    BGM.step++;BGM.next+=sd;
+    if(BGM.name==='win'&&BGM.step>=sg.lead.length){BGM.name=null;break}}}
+function bgmPlay(name){if(!AC){audio();if(!AC)return}bgmInit();if(BGM.name===name)return;BGM.name=name;BGM.step=0;BGM.next=AC.currentTime+.05;
+  if(!BGM.timer)BGM.timer=setInterval(bgmTick,40)}
+function bgmStop(){BGM.name=null}
+function bgmDuck(on){if(BGM.gain)BGM.gain.gain.setTargetAtTime(BGM.on?(on?BGM.vol*.3:BGM.vol):0,AC.currentTime,.1)}
+function bgmToggle(){BGM.on=!BGM.on;S.bgm=BGM.on?1:0;save();if(BGM.gain)BGM.gain.gain.setTargetAtTime(BGM.on?BGM.vol:0,AC.currentTime,.05);document.querySelectorAll('.bgmBtn').forEach(b=>b.textContent=BGM.on?'♪ ON':'♪ OFF');if(BGM.on&&!BGM.name)bgmPlay(mode==='home'?'home':'main')}
+document.addEventListener('pointerdown',()=>{audio();if(AC&&!BGM.name&&mode==='home')bgmPlay('home')},{passive:true});
+document.addEventListener('keydown',()=>{audio();if(AC&&!BGM.name&&mode==='home')bgmPlay('home')});
+
 /* ---------- 圖 ---------- */
 const img={};for(const k in IMG){const i=new Image();i.src=IMG[k];img[k]=i}
 function mk(w,h,fn){const c=document.createElement('canvas');c.width=w;c.height=h;const g=c.getContext('2d');g.imageSmoothingEnabled=false;fn(g);c.w=w;c.h=h;return c}
@@ -759,7 +812,7 @@ function newRun(){
   if(dbg){G.lvl=+dbg[1];if(dbg[2]){G.weak=1;window.__dbg={get G(){return G}}}}
 }
 function grantMythJet(n){const k=MYTH[n].jet;if(!S.jets.includes(k)){S.jets.push(k);save();syncPlayer();floatText(W/2,H*.5,'奪得神器戰機：'+jetOf(k).name,'#FFF0B0',1);sfx.jackpot();G.flash=.5}else floatText(W/2,H*.5,'神器戰機 '+jetOf(k).name+'（已擁有）','#A89CD8',1)}
-function nextLevel(){if(G.myth)grantMythJet(G.lvl);if(G.lvl>=LEVELS){win();return}G.lvl++;G.waveDone=false;G.stage2=0;G.zaps=[];G.wt=0;G.st=1.2;G.banner=2.4;G.boss=null;G.bossDone=false;G.warned=false;G.warn=0;G.dealerT=rnd(3,8);G.dealerDone=false;G.planeT=5;G.sickleT=7;G.wallT=8;G.tycoonT=rnd(5,11);G.tycoonDone=false;G.surge=0}
+function nextLevel(){if(G.myth)grantMythJet(G.lvl);if(G.lvl>=LEVELS){win();return}G.lvl++;bgmPlay(G.myth?'myth':'main');G.waveDone=false;G.stage2=0;G.zaps=[];G.wt=0;G.st=1.2;G.banner=2.4;G.boss=null;G.bossDone=false;G.warned=false;G.warn=0;G.dealerT=rnd(3,8);G.dealerDone=false;G.planeT=5;G.sickleT=7;G.wallT=8;G.tycoonT=rnd(5,11);G.tycoonDone=false;G.surge=0}
 const has=k=>G.buf[k]>0;
 function fireInt(){let f=(.2-S.up.rate*.014)/G.J.rate;if(has('rapid'))f*=.5;if(has('moon'))f*=.75;return f}
 const PAT=[[0],[-4,4],[-6,0,6],[-8,-3,3,8],[-9,-4,0,4,9],[-11,-5,0,5,11]];
@@ -823,7 +876,7 @@ function kill(e){
     burst(e.x,e.y,'#E8453C',40,200);burst(e.x,e.y,M,30,160);burst(e.x,e.y,'#fff',20,240);ringFx(e.x,e.y,M,70);ringFx(e.x,e.y,'#fff',40);sfx.bossDie();G.shake=.7;G.flash=Math.max(G.flash,.4);G.freeze=.22;G.eb=[];G.zaps=[];
     for(let i=0;i<25;i++)drop('coinB',e.x+rnd(-24,24),e.y+rnd(-16,16));
     lootFrom(e);floatText(e.x,e.y,MONS.find(m=>m.k===e.kind).name.split('（')[0]+' 已擊退！','#40D070',1);G.bossDone=true;
-    if(e.kind==='zeus'){G.cine=5;G.ck=0;floatText(W/2,H*.3,'神殿……在崩塌！','#FFE890',1);return}
+    if(e.kind==='zeus'){G.cine=5;G.ck=0;bgmStop();floatText(W/2,H*.3,'神殿……在崩塌！','#FFE890',1);return}
     const dd=DIALOG[e.kind+'_dead'],after=(G.myth&&e.kind==='hera')?()=>{G.stage2=1;G.bossDone=false;G.warned=false;G.boss=null}:nextLevel;
     setTimeout(()=>{if(G&&G.bossDone&&mode==='play'){if(dd)dialog(dd,after);else after()}},1400);
   }else{const kc=e.t==='spirit'?e.col:e.t==='candle'||e.t==='wick'?'#E8453C':'#F2B0A0';burst(e.x,e.y,kc,e.t==='bomb'?18:8,e.t==='bomb'?140:90);ringFx(e.x,e.y,kc,e.t==='bomb'||e.t==='plane'?26:14);sfx.pop();lootFrom(e);
@@ -923,7 +976,7 @@ function update(dt){
   }else{
     if(!G.boss&&!G.bossDone){
       if(!G.warned){G.warned=true;G.warn=2.6;G.sirenT=0}
-      if(G.warn>0){G.warn-=dt;G.sirenT-=dt;if(G.sirenT<=0){sfx.siren();G.sirenT=.6}if(G.warn<=0){spawnBoss(bossKind);G.boss.introDlg=1;if(bossKind==='mars')G.boss.inv=true}}
+      if(G.warn>0){G.warn-=dt;G.sirenT-=dt;if(G.sirenT<=0){sfx.siren();G.sirenT=.6}if(G.warn<=0){spawnBoss(bossKind);bgmPlay(bossKind==='zeus'?'zeus':'boss');G.boss.introDlg=1;if(bossKind==='mars')G.boss.inv=true}}
     }
     G.candleT-=dt;if(G.boss&&G.candleT<=0){G.candleT=rnd(1.4,2.6);if(G.myth)spawnSpirit();else mkE({t:'candle',x:rnd(12,W-12),y:-14,r:5,hp:1,vy:110,score:10,coin:1})}
   }
@@ -1228,9 +1281,9 @@ function renderDiffs(){$('diffList').style.gridTemplateColumns=S.hellCleared?'re
 $('diffList').addEventListener('click',e=>{const b=e.target.closest('[data-diff]');if(!b)return;S.diff=b.dataset.diff;save();renderDiffs()});
 function refreshHome(){renderModes();renderDiffs();$('heroTag').hidden=!S.a9Cleared;$('godTag').hidden=!S.godSlayer;$('wCoins').textContent=fmt(S.coins);$('wBest').textContent=fmt(S.best);const r=rankOf(S.best),ni=RANKS.indexOf(r)+1,nx=RANKS[ni];$('wRank').innerHTML=medalHTML(r)+' 市值 '+r.cap+' 的 <b style="color:'+r.col+'">'+r.name+'</b>'+(nx?'<br><span style="color:var(--mute);font-size:11px">再 '+fmt(nx.min-S.best)+' 分升級到 '+nx.cap+' '+nx.name+'</span>':'<br><span style="color:var(--mute);font-size:11px">已是最高等級</span>');drawMedals();}
 function toast(t){const el=$('toast');el.textContent=t;el.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>el.classList.remove('show'),1600)}
-function goHome(){if(G&&mode!=='over')save();mode='home';G=null;refreshHome();show('home')}
+function goHome(){if(G&&mode!=='over')save();mode='home';G=null;refreshHome();show('home');bgmDuck(false);bgmPlay('home')}
 let DL=null;
-function dialog(lines,cb){DL={lines,i:0,cb};mode='dlg';$('dlg').hidden=false;showLine()}
+function dialog(lines,cb){DL={lines,i:0,cb};mode='dlg';$('dlg').hidden=false;showLine();bgmDuck(true)}
 function showLine(){const l=DL.lines[DL.i];$('dlgWho').textContent=l.who;$('dlgText').textContent=l.text;const c=$('dlgPort'),g=c.getContext('2d');g.imageSmoothingEnabled=false;g.clearRect(0,0,24,24);drawPortrait(g,l.who)}
 function drawPortrait(g,who){
   if(who==='10K DOG'){const i=img.dogHead;g.fillStyle='#F8C838';g.fillRect(0,0,24,24);g.fillStyle='#1A0E14';g.fillRect(1,1,22,22);if(i&&i.complete)g.drawImage(i,0,0,24,24)}
@@ -1243,17 +1296,17 @@ function drawPortrait(g,who){
   else if(who==='比特幣三姐'||who==='神秘刺客'||who==='？？？'){const i=img.ninja;if(i&&i.complete)g.drawImage(i,0,0,48,48,0,0,24,24)}
   else if(who==='爆倉蟹貨'){g.fillStyle='#D8402C';g.fillRect(3,9,18,8);g.fillRect(1,11,2,4);g.fillRect(21,11,2,4);g.fillRect(4,4,4,5);g.fillRect(16,4,4,5);g.fillStyle='#fff';g.fillRect(8,7,3,4);g.fillRect(13,7,3,4);g.fillStyle='#000';g.fillRect(9,8,1,1);g.fillRect(14,8,1,1)}
 }
-function dlgNext(){if(mode!=='dlg'||!DL)return;DL.i++;if(DL.i>=DL.lines.length){$('dlg').hidden=true;const cb=DL.cb;DL=null;mode='play';last=performance.now();if(cb)cb()}else showLine()}
+function dlgNext(){if(mode!=='dlg'||!DL)return;DL.i++;if(DL.i>=DL.lines.length){$('dlg').hidden=true;const cb=DL.cb;DL=null;mode='play';last=performance.now();bgmDuck(false);if(cb)cb()}else showLine()}
 $('dlg').addEventListener('click',e=>{e.stopPropagation();dlgNext()});
 let SI=0;
 function showStory(cb,pg){pg=pg||STORY;SI=0;$('storyImg').src=jetURL(S.jet);$('storyText').textContent=pg[0];$('bStoryNext').textContent='繼續';show('story');mode='story';$('bStoryNext').onclick=()=>{SI++;if(SI>=pg.length){cb();return}$('storyText').textContent=pg[SI];if(SI===pg.length-1)$('bStoryNext').textContent='出發！'};$('bStorySkip').onclick=cb}
 $('bStory').onclick=()=>showStory(goHome,S.mode==='myth'?STORY_MYTH:STORY);
 function start(){audio();if(S.mode==='myth'){if(!S.mythSeen){S.mythSeen=1;save();showStory(startRun,STORY_MYTH);return}startRun();return}if(!S.introSeen){S.introSeen=1;save();showStory(startRun);return}startRun()}
-function startRun(){newRun();hudCache='';mode='play';show('play');hud();last=performance.now()}
-function pause(){if(mode!=='play')return;mode='pause';save();show('pause')}
-function resume(){mode='play';show('play');last=performance.now()}
+function startRun(){newRun();hudCache='';mode='play';show('play');hud();last=performance.now();bgmPlay(G.myth?'myth':'main')}
+function pause(){if(mode!=='play')return;mode='pause';save();show('pause');bgmDuck(true)}
+function resume(){mode='play';show('play');last=performance.now();bgmDuck(false)}
 function endScreen(won){
-  mode='over';const nb=G.score>S.best;if(nb)S.best=G.score;save();
+  mode='over';if(won)bgmPlay('win');else bgmStop();const nb=G.score>S.best;if(nb)S.best=G.score;save();
   $('oTitle').textContent=won?(G.myth?'擊敗神的小狗':G.D.k==='a9'?'傳說的 10K 勇者':'抵達 10K DOG 星！'):'爆倉！';$('oTitle').style.color=won?'var(--green)':'var(--red)';
   $('oScore').textContent=fmt(G.score);$('oCoins').textContent='+'+fmt(G.coins);$('oWave').textContent=won?'終點':'L'+G.lvl;
   const rk=rankOf(G.score);$('oNew').hidden=false;$('oNew').innerHTML=(nb?'NEW RECORD · ':'')+medalHTML(rk,16)+' 市值 '+rk.cap+' '+rk.name;setTimeout(drawMedals,0);
@@ -1490,6 +1543,7 @@ function loop(now){
   else if(G&&mode!=='story'){if(mode==='play'){update(dt);if(G)hud()}if(G)render()}else drawHomeBg(dt*.5);
   requestAnimationFrame(loop);
 }
+$('bBgm0').onclick=$('bBgm1').onclick=e=>{e.stopPropagation();audio();bgmInit();bgmToggle()};document.querySelectorAll('.bgmBtn').forEach(b=>b.textContent=BGM.on?'♪ ON':'♪ OFF');
 $('ver').textContent=VERSION.toUpperCase();renderWallet();if(S.migNote){const mn=S.migNote;setTimeout(()=>toast('舊版傳說機已回收，補你 '+mn+' 次免費抽獎'),1200);S.migNote=0;save()}
 setTimeout(()=>{const ph=phantom();if(ph&&S.wallet){ph.connect({onlyIfTrusted:true}).then(r=>{WAL.addr=r.publicKey.toString();renderWallet();walletBalance();loadPlayer()}).catch(()=>{})}},800);addEventListener('resize',resize);resize();initSprites();
 refreshHome();show('home');requestAnimationFrame(loop);
