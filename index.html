@@ -106,6 +106,12 @@ table.lb tr.me td{background:#2A1E5C}
 .ult2.sel{border-color:var(--gold);background:#2A1E5C}
 .ult2 b{display:block;font-size:13px;margin-bottom:4px}
 .ult2 small{color:var(--mute);font-size:10px;line-height:1.4}
+#dlg{position:absolute;left:0;right:0;bottom:0;padding:10px 12px calc(14px + env(safe-area-inset-bottom,0px));background:rgba(10,7,32,.92);border-top:3px solid var(--gold);z-index:3;cursor:pointer}
+.dlgBox{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start;max-width:440px;margin:0 auto}
+.dlgBox canvas{width:72px;height:72px;image-rendering:pixelated;border:2px solid var(--line);background:#000}
+.dlgBox b{font-size:13px;color:var(--gold)}
+.dlgBox p{margin:4px 0 6px;font-size:14px;line-height:1.6;min-height:44px}
+.dlgBox small{font-size:10px;color:var(--mute)}
 #toast{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);background:var(--green);color:#04291B;font-weight:900;padding:8px 14px;border:3px solid #000;font-size:13px;pointer-events:none;opacity:0;white-space:nowrap}
 #toast.show{opacity:1}
 </style>
@@ -140,6 +146,7 @@ table.lb tr.me td{background:#2A1E5C}
         <button id="bShop" class="btn ghost">升級</button>
         <button id="bGuide" class="btn ghost">圖鑑</button>
         <button id="bBoard" class="btn ghost">排行榜</button>
+        <button id="bStory" class="btn ghost">故事</button>
       </div>
     </div>
     <div class="best">BEST <span id="wBest">0</span></div>
@@ -177,6 +184,15 @@ table.lb tr.me td{background:#2A1E5C}
     <button id="bBoardBack" class="btn ghost" style="width:100%;max-width:400px">返回主頁</button>
   </div>
 
+  <div id="story" class="ov" hidden>
+    <img class="dogBig" id="storyImg" src="" alt="" style="width:90px;image-rendering:pixelated;margin-top:0">
+    <div class="tag">STORY</div>
+    <div class="sub" id="storyText" style="max-width:32ch;font-size:14px;line-height:1.8"></div>
+    <div class="stack"><button id="bStoryNext" class="btn big">繼續</button><button id="bStorySkip" class="btn ghost">跳過</button></div>
+  </div>
+  <div id="dlg" hidden>
+    <div class="dlgBox"><canvas id="dlgPort" width="24" height="24"></canvas><div><b id="dlgWho"></b><p id="dlgText"></p><small class="blink">▼ 點擊繼續</small></div></div>
+  </div>
   <div id="pause" class="ov" hidden>
     <div class="h1">PAUSE</div>
     <div class="stack"><button id="bResume" class="btn big">繼續</button><button id="bQuit" class="btn ghost">放棄並返回主頁</button></div>
@@ -213,7 +229,7 @@ function resize(){const r=app.getBoundingClientRect();SC=r.width/IW;H=Math.max(3
 
 /* ---------- 存檔 ---------- */
 const KEY='10kdog_shooter_v3';
-function fresh(){return{coins:500,best:0,up:{power:0,rate:0,hp:0,magnet:0},daily:'',shiny:0,jet:'gold',jets:['gold'],lb:[],seen:[],ult:'homing'}}
+function fresh(){return{coins:500,best:0,up:{power:0,rate:0,hp:0,magnet:0},daily:'',shiny:0,jet:'gold',jets:['gold'],lb:[],seen:[],ult:'homing',introSeen:0}}
 let S=fresh();
 try{const o=JSON.parse(localStorage.getItem(KEY)||'null');if(o){S=Object.assign(fresh(),o);S.up=Object.assign(fresh().up,o.up||{})}}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
@@ -298,11 +314,31 @@ const MONS=[
   {k:'hacker',name:'駭客',desc:'會瞬間移動，每次出現都朝你射一發'},
   {k:'gas',name:'Gas 費火焰',desc:'斜向亂竄的燒錢火球'},
   {k:'dealer',name:'無敵莊家',desc:'L3 起偶爾降臨：他在場時所有怪物都射不死、子彈會反彈，只能閃開撐過去；每過一關他更快'},
-  {k:'bear',name:'熊市大熊（L3 BOSS）',desc:'熊市來襲'},
+  {k:'mars',name:'Mars（L2 BOSS）',desc:'笑著靠近的「好心 KOL」，送你的禮物全是毒；翻臉後繞圈飛行、丟禮物炸彈、召喚 FUD 幽靈'},
+  {k:'bear',name:'熊市大熊（L4 BOSS）',desc:'熊市來襲：橫掃、扇形、圓環三段彈幕'},
   {k:'ninja',name:'神秘刺客（L6 BOSS）',desc:'起初完全不攻擊；打到半血會突然爆發極密集彈幕；剩 25% 會消失並從你背後偷襲，那時打不到他，慢慢閃避等他回到原位再打'},
-  {k:'crab',name:'爆倉蟹貨（L8 最終 BOSS）',desc:'橫行霸道，兩把鉗子連射'},
+  {k:'crab',name:'爆倉蟹貨（L8 最終 BOSS）',desc:'橫行霸道，兩把鉗子連射，半血後會衝下來撞你'},
 ];
-const LEVELS=8,BOSS_AT={3:'bear',6:'ninja',8:'crab'};
+const LEVELS=8,BOSS_AT={2:'mars',4:'bear',6:'ninja',8:'crab'};
+const LEVEL_SUB={1:'離開地球軌道',2:'一位「熱心」的 KOL',3:'穿越紅K線帶',4:'熊市來襲',5:'Rug Pull 地帶',6:'詭異的寂靜',7:'最後的小行星帶',8:'10K DOG 星軌道：最終決戰'};
+const STORY=[
+  '地球陷入了漫長的熊市。紅K線遮蔽天空，Scam 與 Rug Pull 四處橫行，社區的夥伴一個個爆倉離場。',
+  '傳說在遙遠的故鄉「10K DOG 星」，藏著一枚失落的零件——牛市核心。只要把它帶回地球，社區就能重新燃起希望。',
+  '10K DOG 駕著戰機出發了。但沿途無數壞人想讓他爆倉：熊市巨獸、神秘刺客，還有那些笑著靠近、卻想割你一頸血的「好心 KOL」……',
+  '穿越 8 個關卡，帶著牛市核心，活著回家。',
+];
+const DIALOG={
+  mars_intro:[{who:'Mars',text:'嗨，兄弟！我是 Mars，社區最紅的 KOL。你要去 10K DOG 星？我來幫你！'},{who:'Mars',text:'跟著我的訊號走，包你翻倍。先收下這些「禮物」吧～'},{who:'10K DOG',text:'……天下沒有免費的午餐。'}],
+  mars_turn:[{who:'Mars',text:'哈哈哈！上鉤了！你的倉位就是我的收益，乖乖爆倉吧！'}],
+  mars_dead:[{who:'Mars',text:'不可能……我明明是「好心」的……'},{who:'10K DOG',text:'記住：笑著靠近你的人，未必是朋友。'}],
+  bear_intro:[{who:'熊市大熊',text:'吼——！熊市來了，你的倉位撐得住嗎？'},{who:'10K DOG',text:'熊市只是折扣季。我不會被嚇走的。'}],
+  bear_dead:[{who:'熊市大熊',text:'總有一天……我還會回來的……'}],
+  ninja_intro:[{who:'？？？',text:'……'},{who:'10K DOG',text:'你是誰？為什麼不攻擊？'},{who:'？？？',text:'……等你放下戒心的那一刻。'}],
+  ninja_dead:[{who:'神秘刺客',text:'從背後下手……居然還是輸了。'},{who:'10K DOG',text:'真正的敵人，往往在你看不見的地方。'}],
+  crab_intro:[{who:'爆倉蟹貨',text:'我永不割肉！永不離場！你也別想通過！'},{who:'10K DOG',text:'牛市核心就在你身後。讓開。'}],
+  crab_dead:[{who:'爆倉蟹貨',text:'為什麼……你能離場……'},{who:'10K DOG',text:'因為我知道什麼時候該走。'}],
+  ending:[{who:'10K DOG',text:'拿到了……牛市核心！'},{who:'10K DOG',text:'社區的夥伴們，等我。這次，我們一起迎接牛市。'}],
+};
 
 /* ---------- 聲效 ---------- */
 let AC=null,lastCoinSfx=0;
@@ -347,6 +383,10 @@ gas:pmap(['....O....','...OOO...','..OYYYO..','..OYWYO..','.OOYYYOO.','.OYYYYYO.
 sickle:pmap([
 '......KKKKK.....','....KKSSSSSKK...','...KSSSKKKSSSK..','..KSSK.....KSSK.','..KSK.......KSK.','.KSK.........KSK','.KSK............','.KSK............','..KSK...........','..KSSK..........','...KSSK.........','....KSSK........','.....KSSKKK.....','......KSSSSK....','.......KKKKK....'],P),
 };
+const MARS=pmap([
+'......KKKKKKKK......','....KKPPPPPPPPKK....','...KPPPPPPPPPPPPK...','..KKKKKKKKKKKKKKKK..','..KSSSSSSSSSSSSSSK..','..KSKKKKSSSSKKKKSK..','..KSKGGKSSSSKGGKSK..','..KSKKKKSSSSKKKKSK..','..KSSSSSSSSSSSSSSK..','..KSSSKSSSSSSKSSSK..','..KSSSSKKKKKKSSSSK..','...KSSSSSSSSSSSSK...','....KKSSSSSSSSKK....','......KKKKKKKK......','....KKDDDYYYDDDKK...','...KDDDDYKKKYDDDDK..','...KDDDDDYYYDDDDDK..','...KDDDDDDDDDDDDDK..'],Object.assign({},P,{P:'#E8453C',S:'#F6D3BC',G:'#111',D:'#1E1448',Y:'#F8C838'}));
+const HALO=pmap(['.KYYYYYYK.','KY......YK','.KYYYYYYK.'],{K:'#1A0E14',Y:'#FFF0B0'});
+const HORN=pmap(['K......K','KR....RK','KRK..KRK','.KK..KK.'],{K:'#1A0E14',R:'#E8453C'});
 const BEAR=pmap(['..KK........KK..','.KMMK......KMMK.','.KMMMKKKKKKMMMK.','.KMMMMMMMMMMMMK.','..KMMMMMMMMMMK..','..KMWWMMMMWWMK..','..KMWRMMMMRWMK..','..KMMMMMMMMMMK..','..KMMMppppMMMK..','...KMppKKppMK...','...KMMpKKpMMK...','....KMMMMMMK....','...KMMKMMKMMK...','....KKKKKKKK....'],P);
 let SP={};
 function initSprites(){
@@ -440,7 +480,7 @@ function spawnGas(){const dir=Math.random()<.5?1:-1;mkE({t:'gas',x:dir>0?-10:W+1
 function spawnSickle(){const dir=Math.random()<.5?1:-1;mkE({t:'sickle',x:dir>0?-20:W+20,y:rnd(H*.35,H*.7),r:7,hp:4+G.lvl,vx:dir*(70+G.lvl*6),rot:0,score:70,coin:3})}
 function spawnDealer(){const n=G.lvl,sp=(70+n*22);mkE({t:'dealer',x:rnd(30,W-30),y:-20,r:8,hp:1e9,vx:sp*(Math.random()<.5?1:-1),vy:sp*.6,life:9+n,score:0,coin:0})}
 function spawnBoss(kind){
-  const n=G.lvl;G.boss=mkE({t:'boss',kind,x:W/2,y:-50,r:kind==='ninja'?22:24,hp:150+n*50+(kind==='crab'?120:0)+(kind==='ninja'?80:0),vy:0,ft:2,pat:0,score:400*n,coin:0,phase:0,inv:false,st:0,tt:0});
+  const n=G.lvl;G.boss=mkE({t:'boss',kind,x:W/2,y:-50,r:kind==='ninja'?22:kind==='mars'?11:24,hp:(kind==='mars'?120:150)+n*50+(kind==='crab'?120:0)+(kind==='ninja'?80:0),vy:0,ft:2,pat:0,score:400*n,coin:0,phase:0,inv:false,st:0,tt:0});
 }
 function eShot(x,y,ang,sp,k){G.eb.push({x,y,vx:Math.cos(ang)*sp,vy:Math.sin(ang)*sp,k})}
 function aim(e){return Math.atan2(G.p.y-e.y,G.p.x-e.x)}
@@ -465,7 +505,7 @@ function kill(e){
     burst(e.x,e.y,'#E8453C',40,200);burst(e.x,e.y,'#F8C838',30,160);sfx.big();G.shake=.6;
     for(let i=0;i<25;i++)drop('coinB',e.x+rnd(-24,24),e.y+rnd(-16,16));
     lootFrom(e);floatText(e.x,e.y,MONS.find(m=>m.k===e.kind).name.split('（')[0]+' 已擊退！','#40D070',1);G.bossDone=true;
-    setTimeout(()=>{if(G&&G.bossDone&&mode==='play')nextLevel()},1800);
+    const dd=DIALOG[e.kind+'_dead'];setTimeout(()=>{if(G&&G.bossDone&&mode==='play'){if(dd)dialog(dd,nextLevel);else nextLevel()}},1400);
   }else{burst(e.x,e.y,e.t==='candle'||e.t==='wick'?'#E8453C':'#F2B0A0',e.t==='bomb'?18:8,e.t==='bomb'?140:90);sfx.pop();lootFrom(e);
     if(e.t==='trojan')for(let i=-1;i<=1;i++)mkE({t:'candle',x:e.x+i*12,y:e.y,r:5,hp:1,vy:90,score:10,coin:1})}
 }
@@ -545,7 +585,7 @@ function update(dt){
   }else{
     if(!G.boss&&!G.bossDone){
       if(!G.warned){G.warned=true;G.warn=2.6;G.sirenT=0}
-      if(G.warn>0){G.warn-=dt;G.sirenT-=dt;if(G.sirenT<=0){sfx.siren();G.sirenT=.6}if(G.warn<=0)spawnBoss(bossKind)}
+      if(G.warn>0){G.warn-=dt;G.sirenT-=dt;if(G.sirenT<=0){sfx.siren();G.sirenT=.6}if(G.warn<=0){spawnBoss(bossKind);G.boss.introDlg=1;if(bossKind==='mars')G.boss.inv=true}}
     }
     G.candleT-=dt;if(G.boss&&G.candleT<=0){G.candleT=rnd(1.4,2.6);mkE({t:'candle',x:rnd(12,W-12),y:-14,r:5,hp:1,vy:110,score:10,coin:1})}
   }
@@ -593,7 +633,8 @@ function update(dt){
   G.e=G.e.filter(e=>!e.dead&&e.y<H+30);
   if(G.boss&&G.boss.dead)G.boss=null;
 
-  for(const b of G.eb){const bdt=ufz?dt*.15:dt;b.x+=b.vx*bdt;b.y+=b.vy*bdt;const dx=b.x-p.x,dy=b.y-p.y;if(dx*dx+dy*dy<36){b.dead=true;hurt();if(mode!=='play')return}}
+  for(const b of G.eb){const bdt=ufz?dt*.15:dt;b.x+=b.vx*bdt;b.y+=b.vy*bdt;
+    if(b.k==='gift'){b.fuse-=bdt;if(b.fuse<=0){b.dead=true;for(let i=0;i<8;i++)eShot(b.x,b.y,i/8*Math.PI*2,80);burst(b.x,b.y,'#40D070',8,80);continue}}const dx=b.x-p.x,dy=b.y-p.y;if(dx*dx+dy*dy<36){b.dead=true;hurt();if(mode!=='play')return}}
   G.eb=G.eb.filter(b=>!b.dead&&b.y<H+10&&b.y>-20&&b.x>-10&&b.x<W+10);
 
   const mag=(30+S.up.magnet*26)*G.J.mag*(has('magnet')?2.5:1);
@@ -606,6 +647,7 @@ function update(dt){
     if(dist<12){d.dead=true;
       if(d.k==='coin'||d.k==='coinB'){addCoins(d.k==='coinB'?5:1);sfx.coin();if(d.k==='coinB')floatText(d.x,d.y,'+'+5*G.mult,'#FFF0B0')}
       else if(d.k==='bone'){p.hp=Math.min(p.max,p.hp+1);sfx.power();floatText(d.x,d.y,'+1 生命','#FF8FB8')}
+      else if(d.k==='gift'){const c=pick(COINS.bad);G.buf[c.key]=6;sfx.bad();G.shake=.2;floatText(d.x,d.y,'Mars 的禮物：'+c.fx.split(' ')[0],'#FF9A94');if(G.boss&&G.boss.kind==='mars'&&G.boss.friendly>0)G.boss.friendly=Math.min(G.boss.friendly,.5)}
       else{charge(10);applyCoin(d)}}
   }
   G.d=G.d.filter(d=>!d.dead&&d.y<H+20);
@@ -615,6 +657,7 @@ function update(dt){
 }
 function bossAI(e,dt,n){
   const top=65;if(e.kind!=='ninja'||e.st===0){if(e.y<top&&!(e.kind==='ninja'&&e.st!==0)){e.y+=35*dt;return}}
+  if(e.introDlg){e.introDlg=0;const d=DIALOG[e.kind+'_intro'];if(d){dialog(d,e.kind==='mars'?()=>{e.friendly=4}:null);return}}
   e.ft-=dt;const c=n/3|0;
   if(e.kind==='bear'){e.x=W/2+Math.sin(G.t*.7)*(W/2-36);
     if(e.ft<=0){const pat=e.pat++%3;
@@ -622,6 +665,17 @@ function bossAI(e,dt,n){
       else if(pat===1){const a=aim(e);for(let i=0;i<3;i++)setTimeout(()=>{if(G&&e.hp>0&&mode==='play')eShot(e.x,e.y+18,a+(i-1)*.08,115+n*2)},i*140)}
       else{const k=12,o=rnd(0,1);for(let i=0;i<k;i++)eShot(e.x,e.y,o+i/k*Math.PI*2,65+n*1.5)}
       e.ft=1.2}}
+  else if(e.kind==='mars'){const p=G.p,hpF=e.hp/e.max;
+    if(e.friendly>0){e.friendly-=dt;e.inv=true;e.x+=(W/2+Math.sin(G.t)*40-e.x)*Math.min(1,dt*2);
+      if(!e.gifted){e.gifted=1;for(let i=0;i<4;i++)drop('gift',e.x+rnd(-30,30),e.y+10)}
+      if(e.friendly<=0){e.turned=1;e.inv=false;G.shake=.4;sfx.bad();dialog(DIALOG.mars_turn,null);e.ft=1;e.ang=0}}
+    else if(e.turned){e.ang=(e.ang||0)+dt*1.4;e.x=W/2+Math.cos(e.ang)*(W/2-40);e.y=top+30+Math.sin(e.ang*2)*30;
+      if(e.ft<=0){const pat=e.pat++%3;
+        if(pat===0){for(let i=0;i<3;i++)G.eb.push({x:e.x+(i-1)*14,y:e.y+10,vx:(i-1)*20,vy:90,k:'gift',fuse:1.2})}
+        else if(pat===1){const a=aim(e);for(let i=-2;i<=2;i++)eShot(e.x,e.y+8,a+i*.18,95+n*2)}
+        else if(hpF<.5&&G.e.filter(x=>x.t==='fud').length<3){for(let i=0;i<2;i++)mkE({t:'fud',x:rnd(20,W-20),bx:rnd(20,W-20),y:-12,r:7,hp:3,vy:30,ph:rnd(0,6),amp:20,ft:1.5,score:20,coin:2});floatText(e.x,e.y+20,'FUD！','#E8453C')}
+        e.ft=hpF<.5?.85:1.15}}
+    else{e.inv=true}}
   else if(e.kind==='ninja'){const p=G.p,hpF=e.hp/e.max;
     // st: 0 原位(頂部)  1 爆發中  2 消失中  3 背後偷襲  4 返回原位
     if(e.st===0){e.x+=(W/2+Math.sin(G.t*.6)*(W/2-50)-e.x)*Math.min(1,dt*2);e.inv=false;
@@ -637,7 +691,9 @@ function bossAI(e,dt,n){
       if(e.tt>6){e.st=4;e.tt=0;burst(e.x,e.y,'#8CF',16,120)}}
     else{e.tt+=dt;e.inv=true;e.x=-999;if(e.tt>.8){e.st=0;e.x=W/2;e.y=top;e.inv=false;e.ft=2.5;e.ambT=9;burst(e.x,e.y,'#8CF',16,120);floatText(e.x,e.y+30,'回來了，快打！','#40D070')}}
     if(e.st===0&&e.burst&&hpF<=.25){e.ambT=(e.ambT||9)-dt;if(e.ambT<=0){e.st=2;e.tt=0;burst(e.x,e.y,'#8CF',20,150)}}}
-  else{e.x+=Math.sign(Math.sin(G.t*1.6))*95*dt;e.x=Math.min(Math.max(e.x,30),W-30);
+  else{if(e.hp/e.max<.5){e.dashT=(e.dashT||0)-dt;if(e.dashT<=0&&!e.dashing){e.dashing=1;e.dashDir=1;e.dx0=e.x;floatText(e.x,e.y+26,'衝過來了！','#E8453C')}}
+    if(e.dashing){e.y+=e.dashDir*220*dt;e.x+=(G.p.x-e.x)*Math.min(1,dt*(e.dashDir>0?3:0));if(e.y>H-30)e.dashDir=-1;if(e.dashDir<0&&e.y<=top){e.y=top;e.dashing=0;e.dashT=5}return}
+    e.x+=Math.sign(Math.sin(G.t*1.6))*95*dt;e.x=Math.min(Math.max(e.x,30),W-30);
     if(e.ft<=0){const pat=e.pat++%3;
       if(pat<2){for(const s of[-1,1])for(let i=0;i<3;i++)setTimeout(()=>{if(G&&e.hp>0&&mode==='play')eShot(e.x+s*22,e.y+8,Math.PI/2+s*.15,110+n*2)},i*110)}
       else{const k=14;for(let i=0;i<k;i++)eShot(e.x,e.y,Math.PI*(.1+i/(k-1)*.8),80+n*2);floatText(e.x,e.y+26,'爆倉！','#E8453C')}
@@ -647,6 +703,8 @@ function drawBoss(e){
   const x=Math.round(e.x),y=Math.round(e.y),f=e.hf>0;
   if(e.kind==='bear'){cx.save();cx.translate(x,y);cx.scale(3,3);cx.globalAlpha=f?.5:1;cx.drawImage(BEAR,-8,-7);cx.restore();
     cx.fillStyle='#E8453C';cx.fillRect(x-16,y-30,3,3);cx.fillRect(x-13,y-27,3,3);cx.fillRect(x-10,y-30,3,3);cx.fillRect(x-7,y-24,3,3);cx.fillRect(x-4,y-27,3,3);cx.fillRect(x-1,y-21,6,3);cx.fillRect(x+5,y-24,3,3);cx.fillRect(x+8,y-27,3,3)}
+  else if(e.kind==='mars'){cx.globalAlpha=f?.5:1;cx.drawImage(MARS,x-10,y-9);if(e.turned)cx.drawImage(HORN,x-4,y-13);else cx.drawImage(HALO,x-5,y-14);
+    if(!e.turned){cx.fillStyle='#40D070';cx.font='7px "Press Start 2P",monospace';cx.textAlign='center';cx.fillText('<3',x+16,y-8)}cx.globalAlpha=1}
   else if(e.kind==='ninja'){if(e.x<-100)return;cx.globalAlpha=e.inv?.55:(f?.5:1);blitImg(img.ninja,e.x,e.y);
     if(e.st===1&&Math.floor(G.t*8)%2){cx.fillStyle='#E8453C';cx.fillRect(x-3,y-40,6,14);cx.fillRect(x-3,y-23,6,5)}
     if(e.inv){cx.fillStyle='#8CC8FF';cx.font='7px "Press Start 2P",monospace';cx.textAlign='center';cx.fillText('MISS',x,y-30)}
@@ -667,7 +725,8 @@ function render(){
   drawSpace(0,(G.lvl-1)/(LEVELS-1),dark);
   cx.save();
   if(G.shake>0&&!RM)cx.translate(Math.round(rnd(-3,3)*G.shake*2),Math.round(rnd(-3,3)*G.shake*2));
-  for(const d of G.d){if(d.k==='coin')blitImg(img.coin,d.x,d.y);else if(d.k==='coinB')blitImg(img.coinB,d.x,d.y);else if(d.k==='bone')blit(SP.bone,d.x,d.y);else drawCoinItem(d)}
+  for(const d of G.d){if(d.k==='gift'){const x=Math.round(d.x),y=Math.round(d.y);cx.fillStyle='#40D070';cx.fillRect(x-8,y-8,16,16);cx.fillStyle='#E8453C';cx.fillRect(x-6,y-6,12,12);cx.fillStyle='#FFF0B0';cx.fillRect(x-1,y-6,2,12);cx.fillRect(x-6,y-1,12,2);continue}
+    if(d.k==='coin')blitImg(img.coin,d.x,d.y);else if(d.k==='coinB')blitImg(img.coinB,d.x,d.y);else if(d.k==='bone')blit(SP.bone,d.x,d.y);else drawCoinItem(d)}
   for(const e of G.e){
     if(e.t==='boss')drawBoss(e);
     else if(e.t==='dealer')drawDealer(e.x,e.y,e.hf>0);
@@ -687,7 +746,8 @@ function render(){
     if(has('spread')){cx.strokeStyle='rgba(153,69,255,.7)';cx.strokeRect(Math.round(p.x)-16.5,Math.round(p.y)-16.5,33,33)}
     cx.globalAlpha=1;
   }
-  for(const b of G.eb){if(b.k==='bomb'){cx.fillStyle='#2A2A3A';cx.fillRect(Math.round(b.x)-3,Math.round(b.y)-4,6,8);cx.fillStyle='#E8453C';cx.fillRect(Math.round(b.x)-1,Math.round(b.y)-2,2,4)}
+  for(const b of G.eb){if(b.k==='gift'){const f=Math.floor(G.t*10)%2;cx.fillStyle=f?'#E8453C':'#40D070';cx.fillRect(Math.round(b.x)-4,Math.round(b.y)-4,8,8);cx.fillStyle='#FFF0B0';cx.fillRect(Math.round(b.x)-1,Math.round(b.y)-4,2,8);continue}
+    if(b.k==='bomb'){cx.fillStyle='#2A2A3A';cx.fillRect(Math.round(b.x)-3,Math.round(b.y)-4,6,8);cx.fillStyle='#E8453C';cx.fillRect(Math.round(b.x)-1,Math.round(b.y)-2,2,4)}
     else{cx.fillStyle='#E8453C';cx.fillRect(Math.round(b.x)-2,Math.round(b.y)-2,5,5);cx.fillStyle='#FFD0D8';cx.fillRect(Math.round(b.x),Math.round(b.y),1,1)}}
   for(const f of G.fx){cx.globalAlpha=Math.max(0,f.life/f.max);cx.fillStyle=f.col;cx.fillRect(Math.round(f.x),Math.round(f.y),2,2)}
   cx.globalAlpha=1;cx.textAlign='center';cx.textBaseline='middle';
@@ -708,7 +768,7 @@ function render(){
     cx.fillStyle='#FFF6E0';cx.font='900 8px "Noto Sans TC",sans-serif';cx.fillText(MONS.find(m=>m.k===BOSS_AT[G.lvl]).name.split('（')[0]+' 接近中',W/2,H*.34+32)}
   else if(G.banner>0){cx.globalAlpha=Math.min(1,G.banner);cx.textAlign='center';cx.fillStyle='#000';cx.fillRect(0,H*.36|0,W,34);
     cx.fillStyle='#FFF0B0';cx.font='12px "Press Start 2P",monospace';cx.fillText('LEVEL '+G.lvl+'/'+LEVELS,W/2,H*.36+11);
-    cx.fillStyle='#FFF6E0';cx.font='900 9px "Noto Sans TC",sans-serif';cx.fillText(BOSS_AT[G.lvl]?'BOSS 關卡':G.lvl===1?'離開地球軌道':'距離 10K DOG 星還有 '+(LEVELS-G.lvl+1)+' 關',W/2,H*.36+26);cx.globalAlpha=1}
+    cx.fillStyle='#FFF6E0';cx.font='900 9px "Noto Sans TC",sans-serif';cx.fillText(LEVEL_SUB[G.lvl]||'',W/2,H*.36+26);cx.globalAlpha=1}
   if(G.portrait>0){const a=Math.min(1,G.portrait*1.5);cx.globalAlpha=a*.85;cx.fillStyle='#000';cx.fillRect(0,H*.32|0,W,110);cx.globalAlpha=a;
     const i=img.dealer;if(i&&i.complete){cx.drawImage(i,0,0,i.naturalWidth,i.naturalHeight,W/2-32,H*.32+6|0,64,76)}
     cx.fillStyle='#E8453C';cx.font='10px "Press Start 2P",monospace';cx.textAlign='center';cx.fillText('DEALER',W/2,H*.32+92);cx.globalAlpha=1}
@@ -727,13 +787,29 @@ function hud(){
   const bad=['slow','weak','dark','narrow'];
   $('hBuff').innerHTML=(G.shield?'<span class="good">BNB 護盾</span>':'')+bufs.map(k=>`<span class="${bad.includes(k)?'bad':'good'}">${BUFF_NAME[k]}</span>`).join('');
 }
-const OVS=['home','hangar','shop','guide','board','pause','over'];
-function show(id){OVS.forEach(k=>$(k).hidden=k!==id);$('hud').hidden=!(id==='play'||id==='pause');$('bUlt').hidden=id!=='play'}
+const OVS=['home','hangar','shop','guide','board','pause','over','story'];
+function show(id){OVS.forEach(k=>$(k).hidden=k!==id);$('hud').hidden=!(id==='play'||id==='pause');$('bUlt').hidden=id!=='play';if(id!=='play')$('dlg').hidden=true}
 function today(){const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()}
 function refreshHome(){$('wCoins').textContent=fmt(S.coins);$('wBest').textContent=fmt(S.best);$('bDaily').hidden=S.daily===today();$('boost').disabled=S.coins<40;if(S.coins<40)$('boost').checked=false}
 function toast(t){const el=$('toast');el.textContent=t;el.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>el.classList.remove('show'),1600)}
 function goHome(){if(G&&mode!=='over')save();mode='home';G=null;refreshHome();show('home')}
-function start(){audio();newRun();hudCache='';mode='play';show('play');hud()}
+let DL=null;
+function dialog(lines,cb){DL={lines,i:0,cb};mode='dlg';$('dlg').hidden=false;showLine()}
+function showLine(){const l=DL.lines[DL.i];$('dlgWho').textContent=l.who;$('dlgText').textContent=l.text;const c=$('dlgPort'),g=c.getContext('2d');g.imageSmoothingEnabled=false;g.clearRect(0,0,24,24);drawPortrait(g,l.who)}
+function drawPortrait(g,who){
+  if(who==='10K DOG'){const i=img['jet_'+S.jet];if(i&&i.complete)g.drawImage(i,0,0,i.naturalWidth,i.naturalHeight,0,0,24,24*i.naturalHeight/i.naturalWidth)}
+  else if(who==='Mars'){g.drawImage(MARS,2,3)}
+  else if(who==='熊市大熊'){g.drawImage(BEAR,4,5)}
+  else if(who==='神秘刺客'||who==='？？？'){const i=img.ninja;if(i&&i.complete)g.drawImage(i,0,0,48,48,0,0,24,24)}
+  else if(who==='爆倉蟹貨'){g.fillStyle='#D8402C';g.fillRect(3,9,18,8);g.fillRect(1,11,2,4);g.fillRect(21,11,2,4);g.fillRect(4,4,4,5);g.fillRect(16,4,4,5);g.fillStyle='#fff';g.fillRect(8,7,3,4);g.fillRect(13,7,3,4);g.fillStyle='#000';g.fillRect(9,8,1,1);g.fillRect(14,8,1,1)}
+}
+function dlgNext(){if(mode!=='dlg'||!DL)return;DL.i++;if(DL.i>=DL.lines.length){$('dlg').hidden=true;const cb=DL.cb;DL=null;mode='play';last=performance.now();if(cb)cb()}else showLine()}
+$('dlg').addEventListener('click',e=>{e.stopPropagation();dlgNext()});
+let SI=0;
+function showStory(cb){SI=0;$('storyImg').src=IMG['jetbig_'+S.jet];$('storyText').textContent=STORY[0];$('bStoryNext').textContent='繼續';show('story');mode='story';$('bStoryNext').onclick=()=>{SI++;if(SI>=STORY.length){cb();return}$('storyText').textContent=STORY[SI];if(SI===STORY.length-1)$('bStoryNext').textContent='出發！'};$('bStorySkip').onclick=cb}
+$('bStory').onclick=()=>showStory(goHome);
+function start(){audio();if(!S.introSeen){S.introSeen=1;save();showStory(startRun);return}startRun()}
+function startRun(){newRun();hudCache='';mode='play';show('play');hud();last=performance.now()}
 function pause(){if(mode!=='play')return;mode='pause';save();show('pause')}
 function resume(){mode='play';show('play');last=performance.now()}
 function endScreen(won){
@@ -745,7 +821,7 @@ function endScreen(won){
   show('over');
 }
 function gameOver(){endScreen(false)}
-function win(){G.won=true;addCoins(500);sfx.win();endScreen(true)}
+function win(){G.won=true;addCoins(500);sfx.win();dialog(DIALOG.ending,()=>endScreen(true))}
 function submitScore(){const nm=($('nameIn').value||'匿名').trim().slice(0,10);S.lastName=nm;S.lb.push({n:nm,s:G.score,l:G.won?'終點':'L'+G.lvl,d:today()});S.lb.sort((a,b)=>b.s-a.s);S.lb=S.lb.slice(0,10);save();$('bSubmit').disabled=true;toast('已上榜');G.lbDone=true}
 function renderShop(){
   $('sCoins').textContent=fmt(S.coins);
@@ -774,7 +850,7 @@ function renderGuide(){
     :`<div class="mon" style="opacity:.55"><canvas width="20" height="20" style="background:#0A0620"></canvas><div><b>？？？</b><small>尚未遇到</small></div></div>`).join('');
   document.querySelectorAll('[data-c]').forEach(c=>{const g=c.getContext('2d');g.imageSmoothingEnabled=false;const i=img['L_'+c.dataset.c];const draw=()=>g.drawImage(i,1,1);i.complete?draw():i.onload=draw});
   document.querySelectorAll('[data-m]').forEach(c=>{const g=c.getContext('2d');g.imageSmoothingEnabled=false;const k=c.dataset.m;
-    if(SPR[k]){g.drawImage(SPR[k],Math.round(10-SPR[k].w/2),Math.round(10-SPR[k].h/2))}else if(k==='ninja'){const i=img.ninja;const draw=()=>g.drawImage(i,0,0,48,48,0,0,20,20);i.complete?draw():i.onload=draw}else if(k==='bear'||k==='whale'||k==='crab'){g.drawImage(BEAR,2,3)}else if(k==='dealer'){const i=img.dealer;const draw=()=>g.drawImage(i,2,0);i.complete?draw():i.onload=draw}});
+    if(SPR[k]){g.drawImage(SPR[k],Math.round(10-SPR[k].w/2),Math.round(10-SPR[k].h/2))}else if(k==='mars'){g.drawImage(MARS,0,1)}else if(k==='ninja'){const i=img.ninja;const draw=()=>g.drawImage(i,0,0,48,48,0,0,20,20);i.complete?draw():i.onload=draw}else if(k==='bear'||k==='whale'||k==='crab'){g.drawImage(BEAR,2,3)}else if(k==='dealer'){const i=img.dealer;const draw=()=>g.drawImage(i,2,0);i.complete?draw():i.onload=draw}});
 }
 function renderBoard(){
   const t=$('lbTable');if(!S.lb.length){t.innerHTML='<tr><td>還沒有紀錄，快去打第一場！</td></tr>';return}
@@ -797,7 +873,7 @@ $('nameIn').addEventListener('keydown',e=>{if(e.key==='Enter')submitScore();e.st
 /* ---------- 操作：任何位置拖動 ---------- */
 const keys={};let drag=null,dragV=null;
 addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;const k=e.key.length===1?e.key.toLowerCase():e.key;keys[k]=true;
-  if(k===' '){if(mode==='play')fireUlt();e.preventDefault()}
+  if(k===' '||k==='Enter'){if(mode==='dlg'){dlgNext();e.preventDefault();return}if(mode==='play')fireUlt();e.preventDefault()}
   if(k==='p'||k==='Escape'){mode==='play'?pause():mode==='pause'&&resume()}if(k.startsWith('Arrow')&&mode==='play')e.preventDefault()});
 addEventListener('keyup',e=>{const k=e.key.length===1?e.key.toLowerCase():e.key;keys[k]=false});
 function pd(x,y){if(mode!=='play')return;audio();drag={x,y}}
@@ -823,7 +899,7 @@ document.addEventListener('visibilitychange',()=>{if(document.hidden)pause()});
 let last=performance.now();
 function loop(now){
   const dt=Math.min(.033,(now-last)/1000);last=now;
-  if(G){if(mode==='play'){update(dt);if(G)hud()}if(G)render()}else drawHomeBg(dt*.5);
+  if(G&&mode!=='story'){if(mode==='play'){update(dt);if(G)hud()}if(G)render()}else drawHomeBg(dt*.5);
   requestAnimationFrame(loop);
 }
 addEventListener('resize',resize);resize();initSprites();
