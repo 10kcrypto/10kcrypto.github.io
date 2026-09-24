@@ -428,7 +428,8 @@ async function walletConnect(){
   if(!ph){const url=location.href.split('#')[0];const isMobile=/Android|iPhone|iPad/i.test(navigator.userAgent);
     if(isMobile){location.href='https://phantom.app/ul/browse/'+encodeURIComponent(url)+'?ref='+encodeURIComponent(location.origin);return}
     toast('請先安裝 Phantom 錢包擴充功能');window.open('https://phantom.app/','_blank');return}
-  try{const r=await ph.connect();WAL.addr=r.publicKey.toString();S.wallet=WAL.addr;save();renderWallet();walletBalance();loadPlayer()}catch(e){toast('已取消連接')}
+  const hint=setTimeout(()=>toast('請在 Phantom 彈出視窗按「連接」（若無視窗，請點擊瀏覽器右上角 Phantom 圖示解鎖）'),1500);
+  try{const r=await ph.connect();clearTimeout(hint);WAL.addr=r.publicKey.toString();S.wallet=WAL.addr;save();renderWallet();walletBalance();loadPlayer()}catch(e){clearTimeout(hint);toast('連接失敗：'+(e&&e.message||'已取消'))}
 }
 async function walletBalance(){if(!WAL.addr)return;try{const r=await fetch(SOL_RPC,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:1,method:'getBalance',params:[WAL.addr]})});const j=await r.json();WAL.sol=j.result.value/1e9;renderWallet()}catch(e){}}
 const TOKEN={mint:'C9HwNWaVVecVm35raAaZBXEa4sQF3hGXszhGKpy3pump',treasury:'2KpHRcCsgKArcjERGQbocQyWc6g7rjNHXoqUqFAdwMJC',decimals:6,rate:0.1};
