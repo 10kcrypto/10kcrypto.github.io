@@ -141,6 +141,7 @@ table.lb tr.me td{background:#2A1E5C}
     <div class="h1">金狗射熊</div>
     <div class="tag">穿越地球・抵達 10K DOG 星</div>
     <div class="wallet"><i class="ci"></i><span id="wCoins">0</span></div>
+    <div id="walBox" style="width:100%;max-width:300px"></div>
     <div class="stack">
       <button id="bPlay" class="btn big blink">PRESS START</button>
       <div class="diffs" id="diffList"></div>
@@ -152,6 +153,7 @@ table.lb tr.me td{background:#2A1E5C}
         <button id="bGuide" class="btn ghost">圖鑑</button>
         <button id="bBoard" class="btn ghost">排行榜</button>
         <button id="bStory" class="btn ghost">故事</button>
+        <button id="bPvp" class="btn green" style="grid-column:1/-1">PVP 對戰</button>
       </div>
     </div>
     <div class="best">BEST <span id="wBest">0</span></div>
@@ -183,6 +185,34 @@ table.lb tr.me td{background:#2A1E5C}
     <button id="bGuideBack" class="btn ghost" style="width:100%;max-width:400px">返回主頁</button>
   </div>
 
+  <div id="pvp" class="ov" hidden>
+    <div class="shopHead"><h2>PVP 對戰</h2></div>
+    <div class="fine">你的 Game ID（給對手輸入）</div>
+    <div class="wallet" style="font-size:22px;letter-spacing:.2em" id="myGid">------</div>
+    <div class="row2" style="width:100%;max-width:300px"><button id="bCopyGid" class="btn small ghost">複製 ID</button><button id="bCopyLink" class="btn small ghost">複製邀請連結</button></div>
+    <div class="fine" id="pvRec">戰績 0 勝 0 負</div>
+    <div class="stack">
+      <button id="bHost" class="btn big">建立房間，等對手</button>
+      <div class="nameBox"><input id="joinIn" maxlength="6" placeholder="輸入對手 ID" style="text-transform:uppercase;letter-spacing:.2em"><button id="bJoin" class="btn small green">加入</button></div>
+      <div class="fine" id="pvStatus"></div>
+      <button id="bPvpBack" class="btn ghost">返回主頁</button>
+    </div>
+    <div class="fine">規則：各 3 格生命，子彈直線無追蹤，靠閃避；場中會出現護盾／散射／加速／減速道具，先搶先得。</div>
+  </div>
+  <div id="pvover" class="ov" hidden>
+    <div class="h1" id="pvTitle">勝利！</div>
+    <div class="sub" id="pvSub"></div>
+    <div class="stack"><button id="bPvAgain" class="btn big">再戰</button><button id="bPvHome" class="btn ghost">返回主頁</button></div>
+  </div>
+  <div id="deposit" class="ov" hidden>
+    <div class="shopHead"><h2>10KDOG 充值</h2></div>
+    <div class="fine" id="depWal"></div>
+    <div class="wallet" style="font-size:11px" id="depBal">10KDOG 餘額：讀取中…</div>
+    <div class="fine">兌換率：1,000 10KDOG = 100 遊戲幣。代幣會轉入社區金庫（回購／燒幣／獎池）。</div>
+    <div class="nameBox"><input id="depAmt" type="number" min="1000" step="1000" value="1000" placeholder="10KDOG 數量"><button id="bDepGo" class="btn small green">用 Phantom 轉帳</button></div>
+    <div class="fine" id="depStatus"></div>
+    <button id="bDepBack" class="btn ghost" style="width:100%;max-width:300px">返回主頁</button>
+  </div>
   <div id="board" class="ov scroll" hidden>
     <div class="shopHead"><h2>排行榜</h2></div>
     <table class="lb" id="lbTable"></table>
@@ -340,7 +370,60 @@ function medalHTML(r,size=22){return `<canvas class="medal" data-rank="${r.cap}"
 function drawMedals(){document.querySelectorAll('canvas.medal[data-rank]').forEach(c=>{const r=RANKS.find(x=>x.cap===c.dataset.rank);const g=c.getContext('2d');g.clearRect(0,0,12,14);
   g.fillStyle='#1A0E14';g.fillRect(3,0,6,5);g.fillStyle='#E8453C';g.fillRect(4,0,4,4);g.fillStyle='#1A0E14';g.fillRect(1,4,10,10);g.fillRect(0,5,12,8);g.fillStyle=r.col;g.fillRect(2,5,8,8);g.fillRect(1,6,10,6);g.fillStyle='rgba(255,255,255,.5)';g.fillRect(3,6,2,1);g.fillRect(2,7,1,2);
   const i=RANKS.indexOf(r);g.fillStyle='#1A0E14';for(let k=0;k<Math.min(3,i);k++)g.fillRect(4+k*2,9,1,2)})}
-const VERSION='beta 1.5';
+const VERSION='beta 1.6';
+/* ---------- Phantom 錢包 ---------- */
+const SOL_RPC='https://api.mainnet-beta.solana.com';
+let WAL={addr:null,sol:null};
+function phantom(){return (window.phantom&&window.phantom.solana)||(window.solana&&window.solana.isPhantom?window.solana:null)}
+async function walletConnect(){
+  const ph=phantom();
+  if(!ph){const url=location.href.split('#')[0];const isMobile=/Android|iPhone|iPad/i.test(navigator.userAgent);
+    if(isMobile){location.href='https://phantom.app/ul/browse/'+encodeURIComponent(url)+'?ref='+encodeURIComponent(location.origin);return}
+    toast('請先安裝 Phantom 錢包擴充功能');window.open('https://phantom.app/','_blank');return}
+  try{const r=await ph.connect();WAL.addr=r.publicKey.toString();S.wallet=WAL.addr;save();renderWallet();walletBalance()}catch(e){toast('已取消連接')}
+}
+async function walletBalance(){if(!WAL.addr)return;try{const r=await fetch(SOL_RPC,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:1,method:'getBalance',params:[WAL.addr]})});const j=await r.json();WAL.sol=j.result.value/1e9;renderWallet()}catch(e){}}
+const TOKEN={mint:'C9HwNWaVVecVm35raAaZBXEa4sQF3hGXszhGKpy3pump',treasury:'2KpHRcCsgKArcjERGQbocQyWc6g7rjNHXoqUqFAdwMJC',decimals:6,rate:0.1};
+const TOKEN_PROG='TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA',ATA_PROG='ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL';
+let TOKBAL=null;
+async function tokenBalance(){if(!WAL.addr)return null;const r=await fetch(SOL_RPC,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:1,method:'getTokenAccountsByOwner',params:[WAL.addr,{mint:TOKEN.mint},{encoding:'jsonParsed'}]})});
+  const j=await r.json();let t=0;for(const a of (j.result&&j.result.value||[]))t+=+a.account.data.parsed.info.tokenAmount.uiAmount;TOKBAL=t;return t}
+function loadWeb3(){return new Promise((res,rej)=>{if(window.solanaWeb3)return res();const sc=document.createElement('script');sc.src='https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js';sc.onload=res;sc.onerror=()=>rej(new Error('web3'));document.head.appendChild(sc)})}
+function openDeposit(){if(!WAL.addr)return;show('deposit');$('depWal').textContent='錢包：'+WAL.addr;$('depStatus').textContent='';$('depBal').textContent='10KDOG 餘額：讀取中…';tokenBalance().then(b=>{$('depBal').textContent='10KDOG 餘額：'+(b==null?'—':b.toLocaleString())}).catch(()=>{$('depBal').textContent='10KDOG 餘額：讀不到'})}
+async function depositGo(){
+  const amt=Math.floor(+$('depAmt').value||0);if(amt<1000){$('depStatus').textContent='最少 1,000 10KDOG';return}
+  if(TOKBAL!=null&&amt>TOKBAL){$('depStatus').textContent='餘額不足';return}
+  const ph=phantom();if(!ph||!WAL.addr){$('depStatus').textContent='請先連接 Phantom';return}
+  $('bDepGo').disabled=true;$('depStatus').textContent='準備交易…';
+  try{
+    await loadWeb3();const w3=window.solanaWeb3;
+    const owner=new w3.PublicKey(WAL.addr),mint=new w3.PublicKey(TOKEN.mint),dest=new w3.PublicKey(TOKEN.treasury),tp=new w3.PublicKey(TOKEN_PROG),ap=new w3.PublicKey(ATA_PROG);
+    const ata=(o)=>w3.PublicKey.findProgramAddressSync([o.toBuffer(),tp.toBuffer(),mint.toBuffer()],ap)[0];
+    const src=ata(owner),dst=ata(dest);
+    const conn=new w3.Connection(SOL_RPC,'confirmed');
+    const tx=new w3.Transaction();
+    // 冪等建立金庫 ATA（已存在就略過）
+    tx.add(new w3.TransactionInstruction({programId:ap,keys:[{pubkey:owner,isSigner:true,isWritable:true},{pubkey:dst,isSigner:false,isWritable:true},{pubkey:dest,isSigner:false,isWritable:false},{pubkey:mint,isSigner:false,isWritable:false},{pubkey:w3.SystemProgram.programId,isSigner:false,isWritable:false},{pubkey:tp,isSigner:false,isWritable:false}],data:Buffer.from([1])}));
+    // TransferChecked
+    const raw=BigInt(amt)*BigInt(10**TOKEN.decimals);const data=Buffer.alloc(10);data[0]=12;data.writeBigUInt64LE(raw,1);data[9]=TOKEN.decimals;
+    tx.add(new w3.TransactionInstruction({programId:tp,keys:[{pubkey:src,isSigner:false,isWritable:true},{pubkey:mint,isSigner:false,isWritable:false},{pubkey:dst,isSigner:false,isWritable:true},{pubkey:owner,isSigner:true,isWritable:false}],data}));
+    tx.feePayer=owner;tx.recentBlockhash=(await conn.getLatestBlockhash()).blockhash;
+    $('depStatus').textContent='請在 Phantom 確認…';
+    const {signature}=await ph.signAndSendTransaction(tx);
+    $('depStatus').textContent='已送出，等待確認… '+signature.slice(0,8);
+    await conn.confirmTransaction(signature,'confirmed');
+    const coins=Math.floor(amt*TOKEN.rate);S.coins+=coins;S.deposits=(S.deposits||[]);S.deposits.push({sig:signature,amt,coins,t:Date.now()});save();
+    $('depStatus').textContent='成功！+'+coins+' 遊戲幣（tx '+signature.slice(0,8)+'…）';toast('充值成功 +'+coins+' 幣');
+    fetch(`${FBBASE}/deposits/${signature}?key=${FB.key}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields:{w:{stringValue:WAL.addr},a:{integerValue:String(amt)},c:{integerValue:String(coins)},g:{stringValue:S.gid||''}}})}).catch(()=>{});
+    tokenBalance().then(b=>{$('depBal').textContent='10KDOG 餘額：'+b.toLocaleString()}).catch(()=>{});
+  }catch(e){$('depStatus').textContent='失敗：'+(e.message||e)}
+  $('bDepGo').disabled=false;
+}
+function walletDisconnect(){const ph=phantom();if(ph)ph.disconnect().catch(()=>{});WAL={addr:null,sol:null};S.wallet=null;save();renderWallet()}
+function renderWallet(){const el=$('walBox');if(!el)return;
+  if(!WAL.addr){el.innerHTML='<button id="bWal" class="btn ghost" style="width:100%">連接 Phantom 錢包</button>';$('bWal').onclick=walletConnect;return}
+  const a=WAL.addr;el.innerHTML=`<div class="wallet" style="font-size:10px;justify-content:space-between"><span>◎ ${a.slice(0,4)}…${a.slice(-4)}${WAL.sol!=null?' · '+WAL.sol.toFixed(3)+' SOL':''}</span><span><button id="bDep" class="btn small" style="padding:4px 8px;font-size:10px">充值</button> <button id="bWalX" class="btn small ghost" style="padding:4px 8px;font-size:10px">斷開</button></span></div>`;$('bWalX').onclick=walletDisconnect;$('bDep').onclick=openDeposit}
+
 const DIFFS=[
   {k:'easy',name:'簡單',hp:.7,sp:.8,rate:.8,bul:.8,score:.7,life:1,col:'#40D070'},
   {k:'normal',name:'普通',hp:1,sp:1,rate:1,bul:1,score:1,life:0,col:'#58A8F8'},
@@ -850,7 +933,7 @@ function hud(){
   const bad=['slow','weak','dark','narrow'];
   $('hBuff').innerHTML=(G.shield?'<span class="good">BNB 護盾</span>':'')+bufs.map(k=>`<span class="${bad.includes(k)?'bad':'good'}">${BUFF_NAME[k]}</span>`).join('');
 }
-const OVS=['home','hangar','shop','guide','board','pause','over','story'];
+const OVS=['home','hangar','shop','guide','board','pause','over','story','pvp','pvover','deposit'];
 function show(id){OVS.forEach(k=>$(k).hidden=k!==id);$('hud').hidden=!(id==='play'||id==='pause');$('bUlt').hidden=id!=='play';if(id!=='play')$('dlg').hidden=true}
 function today(){const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()}
 function renderDiffs(){$('diffList').innerHTML=DIFFS.map(d=>`<button data-diff="${d.k}" class="${S.diff===d.k?'sel':''}" style="${S.diff===d.k?'background:'+d.col:''}">${d.name}</button>`).join('')}
@@ -945,17 +1028,18 @@ $('nameIn').addEventListener('keydown',e=>{if(e.key==='Enter')submitScore();e.st
 const keys={};let drag=null,dragV=null;
 addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;const k=e.key.length===1?e.key.toLowerCase():e.key;keys[k]=true;
   if(k===' '||k==='Enter'){if(mode==='dlg'){dlgNext();e.preventDefault();return}if(mode==='play')fireUlt();e.preventDefault()}
-  if(k==='p'||k==='Escape'){mode==='play'?pause():mode==='pause'&&resume()}if(k.startsWith('Arrow')&&mode==='play')e.preventDefault()});
+  if(k==='p'||k==='Escape'){mode==='play'?pause():mode==='pause'&&resume()}if(k.startsWith('Arrow')&&PLAYING())e.preventDefault()});
 addEventListener('keyup',e=>{const k=e.key.length===1?e.key.toLowerCase():e.key;keys[k]=false});
-function pd(x,y){if(mode!=='play')return;audio();drag={x,y}}
-function pm(x,y){if(!drag||mode!=='play')return;dragV={x:(dragV?dragV.x:0)+(x-drag.x)/SC*1.3,y:(dragV?dragV.y:0)+(y-drag.y)/SC*1.3};drag={x,y}}
+const PLAYING=()=>mode==='play'||mode==='pvp';
+function pd(x,y){if(!PLAYING())return;audio();drag={x,y}}
+function pm(x,y){if(!drag||!PLAYING())return;dragV={x:(dragV?dragV.x:0)+(x-drag.x)/SC*1.3,y:(dragV?dragV.y:0)+(y-drag.y)/SC*1.3};drag={x,y}}
 function pu(){drag=null;dragV=null}
 let mouseT=null;
-app.addEventListener('pointermove',e=>{if(e.pointerType!=='mouse'||mode!=='play'||drag)return;const r=app.getBoundingClientRect();mouseT={x:(e.clientX-r.left)/SC,y:(e.clientY-r.top)/SC}},{passive:true});
+app.addEventListener('pointermove',e=>{if(e.pointerType!=='mouse'||!PLAYING()||drag)return;const r=app.getBoundingClientRect();mouseT={x:(e.clientX-r.left)/SC,y:(e.clientY-r.top)/SC}},{passive:true});
 app.addEventListener('pointerleave',()=>{mouseT=null});
 app.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse')mouseT=null},{passive:true});
 if(window.PointerEvent){
-  app.addEventListener('pointerdown',e=>{if(mode!=='play'||e.target.closest('button,input,label'))return;pd(e.clientX,e.clientY);try{app.setPointerCapture(e.pointerId)}catch(_){}},{passive:true});
+  app.addEventListener('pointerdown',e=>{if(!PLAYING()||e.target.closest('button,input,label'))return;pd(e.clientX,e.clientY);try{app.setPointerCapture(e.pointerId)}catch(_){}},{passive:true});
   app.addEventListener('pointermove',e=>pm(e.clientX,e.clientY),{passive:true});
   ['pointerup','pointercancel','lostpointercapture'].forEach(t=>app.addEventListener(t,pu));
 }else{
@@ -966,14 +1050,129 @@ if(window.PointerEvent){
 }
 document.addEventListener('visibilitychange',()=>{if(document.hidden)pause()});
 
+/* ---------- PVP（Firebase Realtime Database REST + SSE） ---------- */
+const RTDB='https://kdog-game-default-rtdb.asia-southeast1.firebasedatabase.app';
+function gid(){if(!S.gid){const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';let g='';for(let i=0;i<6;i++)g+=A[Math.random()*A.length|0];S.gid=g;save()}return S.gid}
+let PV=null;
+const rtPut=(p,v)=>fetch(`${RTDB}/${p}.json`,{method:'PUT',body:JSON.stringify(v)});
+const rtPatch=(p,v)=>fetch(`${RTDB}/${p}.json`,{method:'PATCH',body:JSON.stringify(v)});
+const rtGet=p=>fetch(`${RTDB}/${p}.json`).then(r=>r.json());
+function pvOpen(){gid();$('myGid').textContent=S.gid;$('pvRec').textContent=`戰績 ${(S.pvp&&S.pvp.w)||0} 勝 ${(S.pvp&&S.pvp.l)||0} 負`;$('pvStatus').textContent='';$('joinIn').value='';show('pvp');mode='pvpmenu'}
+$('bPvp').onclick=pvOpen;$('bPvpBack').onclick=()=>{pvLeave();goHome()};
+$('bCopyGid').onclick=()=>{navigator.clipboard.writeText(S.gid).then(()=>toast('已複製 ID')).catch(()=>toast(S.gid))};
+$('bCopyLink').onclick=()=>{const u=location.origin+location.pathname+'?pvp='+S.gid;navigator.clipboard.writeText(u).then(()=>toast('已複製邀請連結')).catch(()=>toast(u))};
+$('bHost').onclick=()=>pvStart(S.gid,'host');
+$('bJoin').onclick=()=>{const c=($('joinIn').value||'').trim().toUpperCase();if(c.length!==6){$('pvStatus').textContent='ID 是 6 個字';return}if(c===S.gid){$('pvStatus').textContent='不能加入自己';return}pvStart(c,'guest')};
+$('bPvHome').onclick=()=>{pvLeave();goHome()};$('bPvAgain').onclick=()=>{const r=PV&&PV.room,role=PV&&PV.role;pvLeave();if(r)pvStart(r,role);else pvOpen()};
+function pvLeave(){if(PV){if(PV.es)PV.es.close();if(PV.timer)clearInterval(PV.timer);if(PV.room&&PV.role==='host'&&PV.state!=='end')rtPut('rooms/'+PV.room,null).catch(()=>{});PV=null}}
+async function pvStart(room,role){
+  audio();pvLeave();gid();
+  const me={id:S.gid,n:S.lastName||S.gid,jet:S.jet,x:.5,y:.85,hp:3,f:0,sh:0,sp:0,fz:0,ts:Date.now()};
+  PV={room,role,me,op:null,state:'wait',seed:0,start:0,b:[],ob:[],items:[],fx:[],tx:[],t:0,lastF:0,fireT:0,opF:0,buf:{},shake:0,claimed:{},nextItem:1,es:null,timer:null,hitT:0};
+  $('pvStatus').textContent=role==='host'?'房間已建立，等待對手加入…（把 ID 或連結傳給對方）':'加入中…';
+  try{
+    if(role==='host'){await rtPut('rooms/'+room,{host:me,state:'wait',seed:Math.floor(Math.random()*1e9),created:Date.now()})}
+    else{const r=await rtGet('rooms/'+room);if(!r||!r.host){$('pvStatus').textContent='找不到這個房間，請對方先建立房間';PV=null;return}if(r.guest&&r.state==='play'){$('pvStatus').textContent='房間已滿';PV=null;return}
+      await rtPatch('rooms/'+room,{guest:me,state:'play',start:Date.now()+3000})}
+  }catch(e){$('pvStatus').textContent='連線失敗：'+e.message;PV=null;return}
+  const es=new EventSource(`${RTDB}/rooms/${room}.json`);PV.es=es;
+  es.addEventListener('put',ev=>pvOnData(JSON.parse(ev.data)));es.addEventListener('patch',ev=>pvOnData(JSON.parse(ev.data)));
+  es.onerror=()=>{if(PV&&PV.state!=='end')$('pvStatus').textContent='連線中斷，重試中…'};
+  PV.timer=setInterval(()=>{if(!PV||PV.state!=='play')return;const m=PV.me;rtPatch(`rooms/${room}/${PV.role}`,{x:+m.x.toFixed(3),y:+m.y.toFixed(3),hp:m.hp,f:m.f,sh:m.sh,sp:m.sp>0?1:0,ts:Date.now()}).catch(()=>{})},90);
+}
+function pvOnData(d){if(!PV)return;const path=d.path,data=d.data;
+  let room=PV.snap||{};
+  if(path==='/'){room=data||{}}else{const segs=path.split('/').filter(Boolean);let o=room;for(let i=0;i<segs.length-1;i++){o[segs[i]]=o[segs[i]]||{};o=o[segs[i]]}
+    if(segs.length){if(data&&typeof data==='object'&&o[segs[segs.length-1]]&&typeof o[segs[segs.length-1]]==='object'&&!path.endsWith('/'))Object.assign(o[segs[segs.length-1]],data);else o[segs[segs.length-1]]=data}else room=data||{}}
+  PV.snap=room;
+  const opRole=PV.role==='host'?'guest':'host';const op=room[opRole];
+  if(op){PV.op=op;if(op.f>PV.opF){const n=Math.min(6,op.f-PV.opF);for(let i=0;i<n;i++)pvOpShoot(op);PV.opF=op.f}}
+  if(room.seed)PV.seed=room.seed;if(room.start)PV.start=room.start;if(room.items)PV.claimed=room.items;
+  if(room.state==='play'&&PV.state==='wait'){PV.state='play';mode='pvp';show('play');$('hud').hidden=true;$('bUlt').hidden=true;PV.t=0;PV.rng=mulberry(PV.seed);floatText2(W/2,H*.4,'對手已加入！','#40D070')}
+  if(room.state==='end'&&PV.state!=='end'){pvEnd(room.winner)}
+  if(!room.host&&PV.role==='guest'&&PV.state!=='end'){$('pvStatus').textContent='對手離開了';}
+}
+function mulberry(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function pvOpShoot(op){const x=(1-op.x)*W,y=(1-op.y)*H;const spd=(PV.buf.fz>0?90:190);
+  const sh=[[0,1]];if(op.sp)sh.push([-.25,1],[.25,1]);
+  for(const [ax,ay] of sh)PV.ob.push({x,y:y+10,vx:ax*spd,vy:ay*spd});}
+function floatText2(x,y,txt,col){PV.tx.push({x,y,txt,col,life:1.6})}
+function pvUpdate(dt){
+  const p=PV.me;PV.t+=dt;for(const k in PV.buf)if(PV.buf[k]>0)PV.buf[k]-=dt;PV.shake=Math.max(0,PV.shake-dt);PV.hitT=Math.max(0,PV.hitT-dt);
+  if(PV.state!=='play')return;
+  const cd=(PV.start-Date.now())/1000;if(cd>0)return;
+  // 移動（同單人一樣：鍵盤／拖／滑鼠）
+  const spd=(PV.buf.spd>0?1.4:1)*jetOf(S.jet).spd;let px=p.x*W,py=p.y*H;
+  let kx=(keys.ArrowRight||keys.d?1:0)-(keys.ArrowLeft||keys.a?1:0),ky=(keys.ArrowDown||keys.s?1:0)-(keys.ArrowUp||keys.w?1:0);
+  if(kx||ky){px+=kx*170*spd*dt;py+=ky*170*spd*dt}
+  if(dragV){px+=dragV.x*spd;py+=dragV.y*spd;dragV=null}
+  if(mouseT){px+=(mouseT.x-px)*Math.min(1,dt*14)*spd;py+=(mouseT.y-py)*Math.min(1,dt*14)*spd}
+  px=Math.min(Math.max(px,10),W-10);py=Math.min(Math.max(py,H*.55),H-20);p.x=px/W;p.y=py/H;
+  // 自動開火（直線）
+  PV.fireT-=dt;if(PV.fireT<=0){PV.fireT=.32;p.f++;const sh=[[0,-1]];if(p.sp>0)sh.push([-.25,-1],[.25,-1]);for(const [ax,ay] of sh)PV.b.push({x:px,y:py-14,vx:ax*300,vy:ay*300})}
+  if(p.sp>0)p.sp-=dt;
+  for(const b of PV.b){b.x+=b.vx*dt;b.y+=b.vy*dt}PV.b=PV.b.filter(b=>b.y>-10);
+  // 對手子彈打中我（我自己判定）
+  for(const b of PV.ob){const bdt=PV.buf.fz>0?dt*.45:dt;b.x+=b.vx*bdt;b.y+=b.vy*bdt;
+    if(!b.dead&&PV.hitT<=0&&Math.abs(b.x-px)<9&&Math.abs(b.y-py)<11){b.dead=true;
+      if(p.sh>0){p.sh=0;floatText2(px,py-16,'護盾擋下','#F3BA2F');sfx.power()}
+      else{p.hp--;PV.hitT=1.2;PV.shake=.35;sfx.hit();burst2(px,py,'#E8453C');rtPatch(`rooms/${PV.room}/${PV.role}`,{hp:p.hp}).catch(()=>{});
+        if(p.hp<=0){rtPatch('rooms/'+PV.room,{state:'end',winner:PV.role==='host'?'guest':'host'}).catch(()=>{});pvEnd(PV.role==='host'?'guest':'host')}}}}
+  PV.ob=PV.ob.filter(b=>!b.dead&&b.y<H+10&&b.x>-10&&b.x<W+10);
+  // 道具：seed 決定，每 6 秒一個，出現喺中線
+  const elapsed=(Date.now()-PV.start)/1000;const want=Math.floor(elapsed/6);
+  while(PV.nextItem<=want){const r=PV.rng();const kinds=['sh','sp','spd','fz'];PV.items.push({n:PV.nextItem,k:kinds[Math.floor(r*4)],x:20+r*(W-40),y:H*.5,t:0});PV.nextItem++}
+  for(const it of PV.items){it.t+=dt;it.y=H*.5+Math.sin(it.t*2)*8;
+    if(PV.claimed[it.n])it.dead=true;
+    else if(Math.abs(it.x-px)<14&&Math.abs(it.y-py)<14){it.dead=true;rtPatch(`rooms/${PV.room}/items`,{[it.n]:PV.role}).catch(()=>{});
+      if(it.k==='sh')p.sh=1;else if(it.k==='sp')p.sp=5;else if(it.k==='spd')PV.buf.spd=5;else PV.buf.fz=4;
+      sfx.power();floatText2(px,py-16,{sh:'護盾',sp:'散射',spd:'加速',fz:'減速對手子彈'}[it.k],'#40D070')}
+    if(it.t>12)it.dead=true}
+  PV.items=PV.items.filter(i=>!i.dead);
+  for(const f of PV.fx){f.x+=f.vx*dt;f.y+=f.vy*dt;f.life-=dt}PV.fx=PV.fx.filter(f=>f.life>0);
+  for(const t of PV.tx){t.y-=15*dt;t.life-=dt}PV.tx=PV.tx.filter(t=>t.life>0);
+}
+function burst2(x,y,col){for(let i=0;i<12;i++){const a=Math.random()*Math.PI*2,v=40+Math.random()*100;PV.fx.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,life:.5,col})}}
+function pvRender(){
+  const p=PV.me;const g=cx.createLinearGradient(0,0,0,H);g.addColorStop(0,'#1A0A1E');g.addColorStop(1,'#0A0720');cx.fillStyle=g;cx.fillRect(0,0,W,H);
+  cx.fillStyle='#FFF6E0';for(const s of stars){cx.globalAlpha=.5;cx.fillRect(s.x,s.y|0,1,1)}cx.globalAlpha=1;
+  cx.fillStyle='#4B3A8C';for(let x=0;x<W;x+=8)cx.fillRect(x,H*.5|0,4,1);
+  cx.save();if(PV.shake>0&&!RM)cx.translate(Math.round((Math.random()*6-3)*PV.shake*2),0);
+  for(const it of PV.items){const x=Math.round(it.x),y=Math.round(it.y);cx.fillStyle='#40D070';cx.fillRect(x-8,y-8,16,16);cx.fillStyle='#062A18';cx.fillRect(x-6,y-6,12,12);cx.fillStyle='#FFF0B0';cx.font='6px "Press Start 2P",monospace';cx.textAlign='center';cx.textBaseline='middle';cx.fillText({sh:'S',sp:'W',spd:'>>',fz:'*'}[it.k],x,y+1)}
+  // 對手（頂部，鏡像，倒轉畫）
+  const op=PV.op;if(op){const ox=(1-op.x)*W,oy=(1-op.y)*H;const i=img['jet_'+(op.jet||'gold')];
+    cx.save();cx.translate(Math.round(ox),Math.round(oy));cx.rotate(Math.PI);if(i&&i.complete)cx.drawImage(i,-i.naturalWidth/2,-i.naturalHeight/2);cx.restore();
+    if(op.sh){cx.strokeStyle='#F3BA2F';cx.strokeRect(Math.round(ox)-18.5,Math.round(oy)-18.5,37,37)}
+    cx.fillStyle='#FFF6E0';cx.font='900 8px "Noto Sans TC",sans-serif';cx.textAlign='center';cx.fillText((op.n||'對手').slice(0,10),ox,oy-24);
+    for(let k=0;k<3;k++){cx.fillStyle=k<(op.hp||0)?'#E8453C':'#3A2A5A';cx.fillRect(Math.round(ox)-14+k*10,Math.round(oy)+22,8,5)}}
+  for(const b of PV.ob){cx.fillStyle='#E8453C';cx.fillRect(Math.round(b.x)-2,Math.round(b.y)-2,5,5)}
+  for(const b of PV.b){cx.fillStyle=p.sp>0?'#40D070':'#FFF0B0';cx.fillRect(Math.round(b.x)-1,Math.round(b.y)-4,2,6)}
+  const px=p.x*W,py=p.y*H;if(!(PV.hitT>0&&Math.floor(PV.t*12)%2)){blitImg(img['jet_'+S.jet],px,py);if(p.sh){cx.strokeStyle='#F3BA2F';cx.strokeRect(Math.round(px)-18.5,Math.round(py)-18.5,37,37)}}
+  for(let k=0;k<3;k++){cx.fillStyle=k<p.hp?'#40D070':'#3A2A5A';cx.fillRect(Math.round(px)-14+k*10,Math.round(py)+22,8,5)}
+  for(const f of PV.fx){cx.globalAlpha=Math.max(0,f.life*2);cx.fillStyle=f.col;cx.fillRect(Math.round(f.x),Math.round(f.y),2,2)}cx.globalAlpha=1;
+  cx.textAlign='center';cx.textBaseline='middle';for(const t of PV.tx){cx.globalAlpha=Math.min(1,t.life);cx.fillStyle='#000';cx.font='900 9px "Noto Sans TC",sans-serif';cx.fillText(t.txt,Math.round(t.x)+1,Math.round(t.y)+1);cx.fillStyle=t.col;cx.fillText(t.txt,Math.round(t.x),Math.round(t.y))}cx.globalAlpha=1;
+  cx.restore();
+  if(PV.buf.fz>0){cx.fillStyle='rgba(140,200,255,.15)';cx.fillRect(0,0,W,H)}
+  const cd=(PV.start-Date.now())/1000;if(PV.state==='play'&&cd>0){cx.fillStyle='#000';cx.fillRect(0,H*.4|0,W,40);cx.fillStyle='#FFF0B0';cx.font='20px "Press Start 2P",monospace';cx.textAlign='center';cx.fillText(String(Math.ceil(cd)),W/2,H*.4+20)}
+  cx.fillStyle='#A89CD8';cx.font='6px "Press Start 2P",monospace';cx.textAlign='left';cx.fillText('PVP '+PV.room,6,H-8);
+}
+function pvEnd(winner){if(!PV||PV.state==='end')return;PV.state='end';const won=winner===PV.role;S.pvp=S.pvp||{w:0,l:0};if(won)S.pvp.w++;else S.pvp.l++;save();
+  if(won)sfx.win();else sfx.bad();$('pvTitle').textContent=won?'勝利！':'被爆倉了…';$('pvTitle').style.color=won?'var(--green)':'var(--red)';$('pvSub').textContent=`戰績 ${S.pvp.w} 勝 ${S.pvp.l} 負`;mode='pvend';show('pvover');
+  if(PV.es)PV.es.close();if(PV.timer)clearInterval(PV.timer);setTimeout(()=>{if(PV&&PV.role==='host')rtPut('rooms/'+PV.room,null).catch(()=>{})},8000)}
+// 邀請連結 ?pvp=CODE
+(function(){const m=/[?&]pvp=([A-Z0-9]{6})/i.exec(location.search);if(m){setTimeout(()=>{pvOpen();$('joinIn').value=m[1].toUpperCase();$('pvStatus').textContent='已填入對手 ID，按「加入」開始'},600)}})();
+$('bDepGo').onclick=depositGo;$('bDepBack').onclick=goHome;
+
 /* ---------- 主迴圈 ---------- */
 let last=performance.now();
 function loop(now){
   const dt=Math.min(.033,(now-last)/1000);last=now;
-  if(G&&mode!=='story'){if(mode==='play'){update(dt);if(G)hud()}if(G)render()}else drawHomeBg(dt*.5);
+  if(mode==='pvp'&&PV){pvUpdate(dt);if(PV)pvRender()}
+  else if(G&&mode!=='story'){if(mode==='play'){update(dt);if(G)hud()}if(G)render()}else drawHomeBg(dt*.5);
   requestAnimationFrame(loop);
 }
-$('ver').textContent=VERSION.toUpperCase();addEventListener('resize',resize);resize();initSprites();
+$('ver').textContent=VERSION.toUpperCase();renderWallet();
+setTimeout(()=>{const ph=phantom();if(ph&&S.wallet){ph.connect({onlyIfTrusted:true}).then(r=>{WAL.addr=r.publicKey.toString();renderWallet();walletBalance()}).catch(()=>{})}},800);addEventListener('resize',resize);resize();initSprites();
 refreshHome();show('home');requestAnimationFrame(loop);
 })();
 </script>
