@@ -441,7 +441,7 @@ function medalHTML(r,size=22){return `<canvas class="medal" data-rank="${r.cap}"
 function drawMedals(){document.querySelectorAll('canvas.medal[data-rank]').forEach(c=>{const r=RANKS.find(x=>x.cap===c.dataset.rank);const g=c.getContext('2d');g.clearRect(0,0,12,14);
   g.fillStyle='#1A0E14';g.fillRect(3,0,6,5);g.fillStyle='#E8453C';g.fillRect(4,0,4,4);g.fillStyle='#1A0E14';g.fillRect(1,4,10,10);g.fillRect(0,5,12,8);g.fillStyle=r.col;g.fillRect(2,5,8,8);g.fillRect(1,6,10,6);g.fillStyle='rgba(255,255,255,.5)';g.fillRect(3,6,2,1);g.fillRect(2,7,1,2);
   const i=RANKS.indexOf(r);g.fillStyle='#1A0E14';for(let k=0;k<Math.min(3,i);k++)g.fillRect(4+k*2,9,1,2)})}
-const VERSION='beta 3.4';
+const VERSION='beta 3.5';
 /* ---------- Phantom 錢包 ---------- */
 const SOL_RPC='https://solana-rpc.publicnode.com';
 let WAL={addr:null,sol:null};
@@ -662,6 +662,53 @@ const SONGS={
     lead2:[57,0,0,0,60,0,0,0,57,0,0,0,60,0,0,0, 56,0,0,0,59,0,0,0,56,0,0,0,59,0,0,0, 65,0,0,0,64,0,0,0,63,0,0,0,60,0,0,0, 53,0,0,0,56,0,0,0,57,0,0,0,69,0,0,0],
     bass:[33,33,0,33,0,33,33,0,33,33,0,33,0,33,33,0, 32,32,0,32,0,32,32,0,32,32,0,32,0,32,32,0, 29,29,0,29,0,29,29,0,31,31,0,31,0,31,31,0, 34,34,0,34,0,34,34,0,33,0,0,0,0,0,0,0],
     drum:'kkh.s.hhkkh.s.hhkkh.s.hhkkh.s.sskkh.s.hhkkh.s.hhkkh.s.hhk.s.s.ss'},
+  // ---- 每個 BOSS 專屬曲 ----
+  mars:{bpm:124,lead:[72,0,76,0,79,0,76,0,74,0,73,0,72,0,0,0, 70,0,72,0,74,0,72,0,67,0,0,0,69,0,70,0, 72,0,76,0,79,0,81,0,79,0,78,0,76,0,0,0, 74,0,73,0,72,0,70,0,67,0,0,0,0,0,0,0],
+    bass:[48,0,48,0,55,0,48,0,53,0,53,0,55,0,53,0, 46,0,46,0,53,0,46,0,43,0,43,0,45,0,46,0, 48,0,48,0,55,0,48,0,53,0,53,0,55,0,53,0, 50,0,50,0,55,0,50,0,43,0,43,0,45,0,47,0],
+    drum:'k.h.s.h.k.hks.h.k.h.s.h.k.hks.hhk.h.s.h.k.hks.h.k.h.s.h.k.s.s.ss'},
+  bear:{bpm:100,lead:[52,0,0,53,0,0,52,0,50,0,0,0,48,0,0,0, 52,0,0,53,0,0,55,0,53,0,0,0,52,0,0,0, 57,0,0,55,0,0,53,0,52,0,0,0,50,0,0,0, 48,0,0,50,0,0,52,0,53,0,0,52,0,0,0,0],
+    lead2:[40,0,0,0,0,0,0,0,40,0,0,0,0,0,0,0, 41,0,0,0,0,0,0,0,40,0,0,0,0,0,0,0, 45,0,0,0,0,0,0,0,41,0,0,0,0,0,0,0, 36,0,0,0,0,0,0,0,40,0,0,0,0,0,0,0],
+    bass:[28,28,0,28,0,0,28,0,29,29,0,29,0,0,28,0, 28,28,0,28,0,0,28,0,31,31,0,31,0,0,28,0, 33,33,0,33,0,0,33,0,29,29,0,29,0,0,28,0, 24,24,0,24,0,0,24,0,28,28,0,28,0,0,28,0],
+    drum:'kk..s...kk..s.sskk..s...kk..s...kk..s...kk..s.sskk..s...k.s.s.ss'},
+  ninja:{bpm:140,lead:[64,0,65,0,69,0,71,0,72,0,71,0,69,0,65,0, 64,0,0,0,0,0,0,0,71,0,72,0,76,0,0,0, 77,0,76,0,72,0,71,0,69,0,65,0,64,0,0,0, 65,0,64,0,60,0,59,0,64,0,0,0,0,0,0,0],
+    bass:[40,0,0,0,40,0,0,0,41,0,0,0,40,0,0,0, 40,0,0,0,40,0,0,0,47,0,0,0,48,0,0,0, 41,0,0,0,41,0,0,0,40,0,0,0,40,0,0,0, 36,0,0,0,35,0,0,0,40,0,0,0,40,0,40,0],
+    drum:'k...h.h.s...h.h.k...h.h.s...h.hhk...h.h.s...h.h.k.h.s.h.k.s.s.ss'},
+  crab:{bpm:120,lead:[62,62,0,62,65,0,62,0,60,0,58,0,57,0,0,0, 62,62,0,62,65,0,69,0,67,0,65,0,62,0,0,0, 70,70,0,70,69,0,67,0,65,0,62,0,60,0,0,0, 58,0,60,0,62,0,65,0,62,0,0,0,0,0,0,0],
+    bass:[38,0,38,0,38,0,38,0,36,0,36,0,33,0,33,0, 38,0,38,0,38,0,38,0,41,0,41,0,38,0,38,0, 34,0,34,0,34,0,34,0,33,0,33,0,31,0,31,0, 34,0,36,0,38,0,38,0,38,0,0,0,0,0,0,0],
+    drum:'k.s.k.s.k.s.k.ssk.s.k.s.k.s.k.s.k.s.k.s.k.s.k.ssk.s.k.s.k.s.ssss'},
+  emperor:{bpm:144,lead:[67,0,67,0,67,0,70,0,74,0,0,0,70,0,74,0, 77,0,0,0,75,0,74,0,72,0,70,0,67,0,0,0, 67,0,67,0,67,0,70,0,74,0,0,0,77,0,79,0, 81,0,0,0,79,0,77,0,75,0,74,0,70,0,0,0],
+    lead2:[55,0,0,0,55,0,0,0,58,0,0,0,58,0,0,0, 53,0,0,0,53,0,0,0,55,0,0,0,55,0,0,0, 55,0,0,0,55,0,0,0,58,0,0,0,58,0,0,0, 57,0,0,0,57,0,0,0,53,0,0,0,55,0,0,0],
+    bass:[43,43,0,43,0,43,0,43,46,46,0,46,0,46,0,46, 41,41,0,41,0,41,0,41,43,43,0,43,0,43,0,43, 43,43,0,43,0,43,0,43,46,46,0,46,0,46,0,46, 45,45,0,45,0,45,0,45,41,41,0,41,0,43,0,43],
+    drum:'kkh.s.h.kkh.s.hhkkh.s.h.kkh.s.sskkh.s.h.kkh.s.hhkkh.s.h.k.s.s.ss'},
+  venus:{bpm:112,lead:[76,0,0,79,0,0,83,0,81,0,0,79,0,0,76,0, 74,0,0,77,0,0,81,0,79,0,0,0,0,0,0,0, 76,0,0,79,0,0,83,0,86,0,0,84,0,0,83,0, 81,0,0,79,0,0,77,0,76,0,0,0,0,0,0,0],
+    lead2:[64,0,0,0,0,0,0,0,64,0,0,0,0,0,0,0, 62,0,0,0,0,0,0,0,62,0,0,0,0,0,0,0, 64,0,0,0,0,0,0,0,67,0,0,0,0,0,0,0, 65,0,0,0,0,0,0,0,64,0,0,0,0,0,0,0],
+    bass:[45,0,0,52,0,0,57,0,41,0,0,48,0,0,53,0, 38,0,0,45,0,0,50,0,40,0,0,47,0,0,52,0, 45,0,0,52,0,0,57,0,43,0,0,50,0,0,55,0, 41,0,0,48,0,0,53,0,45,0,0,0,0,0,0,0],
+    drum:'k..h..h.k..h..s.k..h..h.k..h..s.k..h..h.k..h..s.k..h..h.k.s.s.ss'},
+  hermes:{bpm:172,lead:[67,0,71,0,74,0,73,0,74,0,78,0,79,0,0,0, 67,0,71,0,74,0,73,0,71,0,69,0,67,0,0,0, 69,0,73,0,76,0,74,0,76,0,79,0,81,0,0,0, 79,0,78,0,76,0,74,0,73,0,71,0,67,0,0,0],
+    bass:[43,43,43,43,43,43,43,43,43,43,43,43,43,43,43,43, 41,41,41,41,41,41,41,41,43,43,43,43,43,43,43,43, 45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45, 43,43,43,43,43,43,43,43,38,38,38,38,43,43,43,43],
+    drum:'khhkshhkkhhkshhskhhkshhkkhhkshsskhhkshhkkhhkshhskhhkshhkksksssss'},
+  poseidon:{bpm:126,lead:[57,60,64,67,64,60,57,60,55,59,62,67,62,59,55,59, 53,57,60,65,60,57,53,57,52,55,59,64,59,55,52,55, 57,60,64,67,64,60,57,60,55,59,62,67,62,59,55,59, 53,57,60,65,60,57,53,57,52,56,59,64,59,56,52,56],
+    bass:[33,0,0,0,33,0,0,0,31,0,0,0,31,0,0,0, 29,0,0,0,29,0,0,0,28,0,0,0,28,0,0,0, 33,0,0,0,33,0,0,0,31,0,0,0,31,0,0,0, 29,0,0,0,29,0,0,0,28,0,0,0,28,0,28,0],
+    drum:'k...s...k...s.h.k...s...k...s.hhk...s...k...s.h.k...s...k.s.s.ss'},
+  thor:{bpm:136,lead:[62,0,62,0,65,0,69,0,74,0,0,0,72,0,69,0, 62,0,62,0,65,0,69,0,70,0,0,0,69,0,65,0, 62,0,62,0,65,0,69,0,74,0,0,0,77,0,74,0, 72,0,70,0,69,0,65,0,62,0,0,0,0,0,0,0],
+    lead2:[50,0,0,0,50,0,0,0,50,0,0,0,50,0,0,0, 50,0,0,0,50,0,0,0,53,0,0,0,53,0,0,0, 50,0,0,0,50,0,0,0,50,0,0,0,50,0,0,0, 48,0,0,0,48,0,0,0,50,0,0,0,50,0,0,0],
+    bass:[38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38, 38,38,38,38,38,38,38,38,41,41,41,41,41,41,41,41, 38,38,38,38,38,38,38,38,38,38,38,38,38,38,38,38, 36,36,36,36,36,36,36,36,38,38,38,38,38,0,0,0],
+    drum:'kkh.s.hhkkh.s.hhkkh.s.hhkkh.s.sskkh.s.hhkkh.s.hhkkh.s.hhk.s.s.ss'},
+  ares:{bpm:150,lead:[57,0,57,57,0,57,60,0,59,0,57,0,55,0,0,0, 57,0,57,57,0,57,62,0,60,0,59,0,57,0,0,0, 64,0,64,64,0,64,65,0,64,0,62,0,60,0,0,0, 59,0,60,0,62,0,64,0,57,0,0,0,0,0,0,0],
+    bass:[33,33,0,33,33,0,33,0,33,33,0,33,33,0,33,0, 33,33,0,33,33,0,33,0,36,36,0,36,36,0,36,0, 40,40,0,40,40,0,40,0,38,38,0,38,38,0,38,0, 36,36,0,36,36,0,36,0,33,33,0,33,33,0,33,0],
+    drum:'k.s.kss.k.s.ksssk.s.kss.k.s.kssskss.kss.k.s.ksssk.s.kss.kss.ssss'},
+  hades:{bpm:92,lead:[55,0,0,0,58,0,0,0,54,0,0,0,55,0,0,0, 53,0,0,0,58,0,0,0,51,0,0,0,50,0,0,0, 55,0,0,0,58,0,0,0,61,0,0,0,60,0,0,0, 58,0,0,0,55,0,0,0,54,0,0,0,55,0,0,0],
+    lead2:[43,0,0,0,0,0,0,0,43,0,0,0,0,0,0,0, 41,0,0,0,0,0,0,0,39,0,0,0,0,0,0,0, 43,0,0,0,0,0,0,0,46,0,0,0,0,0,0,0, 42,0,0,0,0,0,0,0,43,0,0,0,0,0,0,0],
+    bass:[31,0,0,0,0,0,31,0,30,0,0,0,0,0,30,0, 29,0,0,0,0,0,29,0,27,0,0,0,0,0,27,0, 31,0,0,0,0,0,31,0,34,0,0,0,0,0,34,0, 30,0,0,0,0,0,30,0,31,0,0,0,0,0,0,0],
+    drum:'k.......s...h...k.......s...h.h.k.......s...h...k.......s.s.h.h.'},
+  athena:{bpm:118,lead:[69,0,71,0,72,0,76,0,74,0,72,0,71,0,69,0, 66,0,69,0,71,0,74,0,72,0,0,0,0,0,0,0, 69,0,71,0,72,0,76,0,78,0,76,0,74,0,72,0, 71,0,72,0,74,0,71,0,69,0,0,0,0,0,0,0],
+    lead2:[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 57,0,0,0,0,0,0,0,62,0,0,0,0,0,0,0, 59,0,0,0,0,0,0,0,57,0,0,0,0,0,0,0],
+    bass:[45,0,0,0,52,0,0,0,50,0,0,0,45,0,0,0, 42,0,0,0,49,0,0,0,47,0,0,0,45,0,0,0, 45,0,0,0,52,0,0,0,50,0,0,0,45,0,0,0, 43,0,0,0,50,0,0,0,45,0,0,0,45,0,0,0],
+    drum:'k..h.s.hk..h.s..k..h.s.hk..h.s.sk..h.s.hk..h.s..k..h.s.hk.s.s.ss'},
+  hera:{bpm:132,lead:[71,0,0,74,0,0,78,0,0,79,0,0,78,0,74,0, 71,0,0,73,0,0,76,0,0,78,0,0,76,0,73,0, 71,0,0,74,0,0,78,0,0,81,0,0,83,0,81,0, 79,0,0,78,0,0,76,0,0,74,0,0,71,0,0,0],
+    lead2:[59,0,0,0,0,0,0,0,62,0,0,0,0,0,0,0, 57,0,0,0,0,0,0,0,61,0,0,0,0,0,0,0, 59,0,0,0,0,0,0,0,62,0,0,0,0,0,0,0, 64,0,0,0,0,0,0,0,59,0,0,0,0,0,0,0],
+    bass:[35,0,0,42,0,0,47,0,0,42,0,0,35,0,0,0, 33,0,0,40,0,0,45,0,0,40,0,0,33,0,0,0, 35,0,0,42,0,0,47,0,0,42,0,0,35,0,0,0, 40,0,0,47,0,0,52,0,0,47,0,0,35,0,35,0],
+    drum:'k..h..s.k..h..ssk..h..s.k..h..s.k..h..s.k..h..ssk..h..s.k.s.s.ss'},
   win:{bpm:120,lead:[72,0,72,0,72,0,76,0,79,0,0,0,76,0,79,0, 84,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
     bass:[48,0,48,0,48,0,52,0,55,0,0,0,52,0,55,0, 60,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
     drum:'k.h.k.h.k.h.k.h.k...............................................'},
@@ -674,7 +721,7 @@ function bgmNote(m,t,d,type,v,det){const o=AC.createOscillator(),g=AC.createGain
 function bgmDrum(c,t){if(c==='.')return;const src=AC.createBufferSource();src.buffer=BGM.noise;const g=AC.createGain(),f=AC.createBiquadFilter();
   if(c==='k'){const o=AC.createOscillator(),og=AC.createGain();o.frequency.setValueAtTime(150,t);o.frequency.exponentialRampToValueAtTime(40,t+.12);og.gain.setValueAtTime(.5,t);og.gain.exponentialRampToValueAtTime(.001,t+.14);o.connect(og);og.connect(BGM.gain);o.start(t);o.stop(t+.16);return}
   f.type=c==='h'?'highpass':'bandpass';f.frequency.value=c==='h'?7000:1800;g.gain.setValueAtTime(c==='h'?.12:.3,t);g.gain.exponentialRampToValueAtTime(.001,t+(c==='h'?.04:.12));src.connect(f);f.connect(g);g.connect(BGM.gain);src.start(t);src.stop(t+.15)}
-function bgmTick(){if(!AC||!BGM.name)return;const sg=SONGS[BGM.name],sd=60/sg.bpm/4;
+function bgmTick(){if(!AC||!BGM.name)return;if(AC.state!=='running'){AC.resume().catch(()=>{});return}if(BGM.next<AC.currentTime-.2)BGM.next=AC.currentTime+.05;const sg=SONGS[BGM.name],sd=60/sg.bpm/4;
   while(BGM.next<AC.currentTime+.12){const i=BGM.step%sg.lead.length,t=BGM.next;
     const L=sg.lead[i];if(L)bgmNote(L,t,sd*1.6,'square',.07);
     const L2=sg.lead2&&sg.lead2[i];if(L2)bgmNote(L2,t,sd*3,'square',.035,-6);
@@ -689,6 +736,7 @@ function bgmDuck(on){if(BGM.gain)BGM.gain.gain.setTargetAtTime(BGM.on?(on?BGM.vo
 function bgmToggle(){BGM.on=!BGM.on;S.bgm=BGM.on?1:0;save();if(BGM.gain)BGM.gain.gain.setTargetAtTime(BGM.on?BGM.vol:0,AC.currentTime,.05);document.querySelectorAll('.bgmBtn').forEach(b=>b.textContent=BGM.on?'♪ ON':'♪ OFF');if(BGM.on&&!BGM.name)bgmPlay(mode==='home'?'home':'main')}
 document.addEventListener('pointerdown',()=>{audio();if(AC&&!BGM.name&&mode==='home')bgmPlay('home')},{passive:true});
 document.addEventListener('keydown',()=>{audio();if(AC&&!BGM.name&&mode==='home')bgmPlay('home')});
+for(const ev of['touchend','click'])document.addEventListener(ev,()=>{audio();if(AC&&!BGM.name&&mode==='home')bgmPlay('home')},{passive:true});
 
 /* ---------- 圖 ---------- */
 const img={};for(const k in IMG){const i=new Image();i.src=IMG[k];img[k]=i}
@@ -848,7 +896,7 @@ function spawnGas(){const dir=Math.random()<.5?1:-1;mkE({t:'gas',x:dir>0?-10:W+1
 function spawnSickle(){const dir=Math.random()<.5?1:-1;mkE({t:'sickle',x:dir>0?-20:W+20,y:rnd(H*.35,H*.7),r:7,hp:4+G.lvl,vx:dir*(70+G.lvl*6),rot:0,score:70,coin:3})}
 function spawnDealer(){const n=G.lvl,sp=(70+n*22);mkE({t:'dealer',x:rnd(30,W-30),y:-20,r:8,hp:1e9,vx:sp*(Math.random()<.5?1:-1),vy:sp*.6,life:9+n,score:0,coin:0})}
 function spawnBoss(kind){
-  const n=G.lvl,god=!!GODS[kind];G.boss=mkE({t:'boss',kind,x:W/2,y:-50,r:god?14:kind==='ninja'?22:kind==='mars'?11:kind==='emperor'?12:24,hp:(god?170+n*105+(kind==='zeus'?520:kind==='hera'?160:0):(kind==='mars'?120:150)+n*95+(kind==='crab'?120:0)+(kind==='ninja'?80:0)+(kind==='emperor'?420:0)),vy:0,ft:2,pat:0,score:400*n,coin:0,phase:0,inv:false,st:0,tt:0});
+  const n=G.lvl,god=!!GODS[kind];G.boss=mkE({t:'boss',kind,x:W/2,y:-50,r:god?14:kind==='ninja'?22:kind==='mars'?11:kind==='emperor'?12:24,hp:(god?(170+n*105+(kind==='zeus'?520:kind==='hera'?160:0))*.75:(kind==='mars'?120:150)+n*95+(kind==='crab'?120:0)+(kind==='ninja'?80:0)+(kind==='emperor'?420:0)),vy:0,ft:2,pat:0,score:400*n,coin:0,phase:0,inv:false,st:0,tt:0});
   if(G.weak){G.boss.hp=8;G.boss.max=8}
 }
 function eShot(x,y,ang,sp,k){sp*=G.D.bul*(1+(G.lvl-1)*.05);G.eb.push({x,y,vx:Math.cos(ang)*sp,vy:Math.sin(ang)*sp,k})}
@@ -963,7 +1011,7 @@ function update(dt){
   p.inv=Math.max(0,p.inv-dt);G.banner-=dt;G.shake=Math.max(0,G.shake-dt);
   p.ft-=dt;if(p.ft<=0){p.ft=fireInt();shoot()}
 
-  const n=G.lvl,bossKind=bossAt(n),wEnd=G.myth?14:20;
+  const n=G.lvl,bossKind=bossAt(n),wEnd=20;
   if(!bossKind||(G.myth&&!G.waveDone)){
     G.wt+=dt;G.st-=dt;
     if(G.st<=0&&G.wt<wEnd){spawnEnemy();G.st=Math.max(.32,1.4-n*.13)*rnd(.75,1.3)/G.diff/G.D.rate}
@@ -976,7 +1024,7 @@ function update(dt){
   }else{
     if(!G.boss&&!G.bossDone){
       if(!G.warned){G.warned=true;G.warn=2.6;G.sirenT=0}
-      if(G.warn>0){G.warn-=dt;G.sirenT-=dt;if(G.sirenT<=0){sfx.siren();G.sirenT=.6}if(G.warn<=0){spawnBoss(bossKind);bgmPlay(bossKind==='zeus'?'zeus':'boss');G.boss.introDlg=1;if(bossKind==='mars')G.boss.inv=true}}
+      if(G.warn>0){G.warn-=dt;G.sirenT-=dt;if(G.sirenT<=0){sfx.siren();G.sirenT=.6}if(G.warn<=0){spawnBoss(bossKind);bgmPlay(SONGS[bossKind]?bossKind:'boss');G.boss.introDlg=1;if(bossKind==='mars')G.boss.inv=true}}
     }
     G.candleT-=dt;if(G.boss&&G.candleT<=0){G.candleT=rnd(1.4,2.6);if(G.myth)spawnSpirit();else mkE({t:'candle',x:rnd(12,W-12),y:-14,r:5,hp:1,vy:110,score:10,coin:1})}
   }
@@ -1544,6 +1592,7 @@ function loop(now){
   requestAnimationFrame(loop);
 }
 $('bBgm0').onclick=$('bBgm1').onclick=e=>{e.stopPropagation();audio();bgmInit();bgmToggle()};document.querySelectorAll('.bgmBtn').forEach(b=>b.textContent=BGM.on?'♪ ON':'♪ OFF');
+try{audio();bgmPlay('home')}catch(e){}
 $('ver').textContent=VERSION.toUpperCase();renderWallet();if(S.migNote){const mn=S.migNote;setTimeout(()=>toast('舊版傳說機已回收，補你 '+mn+' 次免費抽獎'),1200);S.migNote=0;save()}
 setTimeout(()=>{const ph=phantom();if(ph&&S.wallet){ph.connect({onlyIfTrusted:true}).then(r=>{WAL.addr=r.publicKey.toString();renderWallet();walletBalance();loadPlayer()}).catch(()=>{})}},800);addEventListener('resize',resize);resize();initSprites();
 refreshHome();show('home');requestAnimationFrame(loop);
