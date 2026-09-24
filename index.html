@@ -182,7 +182,7 @@ table.lb tr.me td{background:#2A1E5C}
   <div id="board" class="ov scroll" hidden>
     <div class="shopHead"><h2>排行榜</h2></div>
     <table class="lb" id="lbTable"></table>
-    <div class="fine">Demo 版排行榜只儲存在本機；正式版接上伺服器後全社群共用。</div>
+    <div class="fine" id="lbNote">全球排行榜</div>
     <button id="bBoardBack" class="btn ghost" style="width:100%;max-width:400px">返回主頁</button>
   </div>
 
@@ -271,7 +271,7 @@ const COINS={
   ],
   common:[
     {t:'LINK',name:'Chainlink',fx:'子彈穿透 5 秒',key:'pierce'},
-    {t:'ADA',name:'Cardano',fx:'回復 1 格生命',key:'heal'},
+    {t:'ADA',name:'Cardano',fx:'回復 1 格生命（真的嗎？）',key:'ada'},
     {t:'XLM',name:'Stellar',fx:'清除畫面所有敵彈',key:'clearb'},
     {t:'BCH',name:'Bitcoin Cash',fx:'+120 分',key:'s120'},
     {t:'NEAR',name:'NEAR',fx:'磁石 5 秒',key:'mag5'},
@@ -320,7 +320,7 @@ const MONS=[
   {k:'dealer',name:'無敵莊家',desc:'L3 起偶爾降臨：他在場時所有怪物都射不死、子彈會反彈，只能閃開撐過去；每過一關他更快'},
   {k:'mars',name:'Mars（L2 BOSS）',desc:'笑著靠近的「好心 KOL」，送你的禮物全是毒；翻臉後繞圈飛行、丟禮物炸彈、召喚 FUD 幽靈'},
   {k:'bear',name:'熊市大熊（L4 BOSS）',desc:'熊市來襲：橫掃、扇形、圓環三段彈幕'},
-  {k:'ninja',name:'神秘刺客（L6 BOSS）',desc:'起初完全不攻擊；打到半血會突然爆發極密集彈幕；剩 25% 會消失並從你背後偷襲，那時打不到他，慢慢閃避等他回到原位再打'},
+  {k:'ninja',name:'比特幣三姐（L6 BOSS）',desc:'起初完全不攻擊；打到半血會突然爆發極密集彈幕；剩 25% 會消失並從你背後偷襲，那時打不到他，慢慢閃避等他回到原位再打'},
   {k:'crab',name:'爆倉蟹貨（L7 BOSS）',desc:'橫行霸道，兩把鉗子連射，半血後會衝下來撞你'},
 ];
 const RANKS=[
@@ -336,9 +336,16 @@ function medalHTML(r,size=22){return `<canvas class="medal" data-rank="${r.cap}"
 function drawMedals(){document.querySelectorAll('canvas.medal[data-rank]').forEach(c=>{const r=RANKS.find(x=>x.cap===c.dataset.rank);const g=c.getContext('2d');g.clearRect(0,0,12,14);
   g.fillStyle='#1A0E14';g.fillRect(3,0,6,5);g.fillStyle='#E8453C';g.fillRect(4,0,4,4);g.fillStyle='#1A0E14';g.fillRect(1,4,10,10);g.fillRect(0,5,12,8);g.fillStyle=r.col;g.fillRect(2,5,8,8);g.fillRect(1,6,10,6);g.fillStyle='rgba(255,255,255,.5)';g.fillRect(3,6,2,1);g.fillRect(2,7,1,2);
   const i=RANKS.indexOf(r);g.fillStyle='#1A0E14';for(let k=0;k<Math.min(3,i);k++)g.fillRect(4+k*2,9,1,2)})}
-const VERSION='beta 1.3';
+const VERSION='beta 1.4';
+const FB={key:'AIzaSyC7O7r_dfVcfLW-AfBKuQ1PCTvWf1HTFgM',proj:'kdog-game'};
+const FBBASE=`https://firestore.googleapis.com/v1/projects/${FB.proj}/databases/(default)/documents`;
+async function lbFetch(){const r=await fetch(`${FBBASE}:runQuery?key=${FB.key}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({structuredQuery:{from:[{collectionId:'scores'}],orderBy:[{field:{fieldPath:'s'},direction:'DESCENDING'}],limit:30}})});
+  if(!r.ok)throw new Error('lb '+r.status);const j=await r.json();return j.filter(x=>x.document).map(x=>{const f=x.document.fields;return{n:f.n.stringValue,s:+(f.s.integerValue||0),l:f.l?f.l.stringValue:'',r:f.r?f.r.stringValue:''}})}
+async function lbPush(rec){const id=Math.random().toString(36).slice(2,10)+Date.now().toString(36);
+  const body={writes:[{update:{name:`projects/${FB.proj}/databases/(default)/documents/scores/${id}`,fields:{n:{stringValue:rec.n},s:{integerValue:String(rec.s)},l:{stringValue:rec.l},r:{stringValue:rec.r}}},updateTransforms:[{fieldPath:'t',setToServerValue:'REQUEST_TIME'}],currentDocument:{exists:false}}]};
+  const r=await fetch(`${FBBASE}:commit?key=${FB.key}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});if(!r.ok)throw new Error('push '+r.status)}
 const LEVELS=8,BOSS_AT={2:'mars',4:'bear',6:'ninja',7:'crab',8:'emperor'};
-const LEVEL_SUB={1:'離開地球軌道',2:'一位「熱心」的 KOL',3:'穿越紅K線帶',4:'熊市來襲',5:'Rug Pull 地帶',6:'詭異的寂靜',7:'最後的小行星帶',8:'10K DOG 星軌道：關稅大帝'};
+const LEVEL_SUB={1:'離開地球軌道',2:'一位「熱心」的 KOL',3:'穿越紅K線帶',4:'熊市來襲',5:'Rug Pull 地帶',6:'三姐的寂靜',7:'最後的小行星帶',8:'10K DOG 星軌道：關稅大帝'};
 const STORY=[
   '地球陷入了漫長的熊市。紅K線遮蔽天空，Scam 與 Rug Pull 四處橫行，社區的夥伴一個個爆倉離場。',
   '傳說在遙遠的故鄉「10K DOG 星」，藏著一枚失落的零件——牛市核心。只要把它帶回地球，社區就能重新燃起希望。',
@@ -351,8 +358,8 @@ const DIALOG={
   mars_dead:[{who:'Mars',text:'不可能……我明明是「好心」的……'},{who:'10K DOG',text:'記住：笑著靠近你的人，未必是朋友。'}],
   bear_intro:[{who:'熊市大熊',text:'吼——！熊市來了，你的倉位撐得住嗎？'},{who:'10K DOG',text:'熊市只是折扣季。我不會被嚇走的。'}],
   bear_dead:[{who:'熊市大熊',text:'總有一天……我還會回來的……'}],
-  ninja_intro:[{who:'？？？',text:'……'},{who:'10K DOG',text:'你是誰？為什麼不攻擊？'},{who:'？？？',text:'……等你放下戒心的那一刻。'}],
-  ninja_dead:[{who:'神秘刺客',text:'從背後下手……居然還是輸了。'},{who:'10K DOG',text:'真正的敵人，往往在你看不見的地方。'}],
+  ninja_intro:[{who:'比特幣三姐',text:'……'},{who:'10K DOG',text:'比特幣三姐？為什麼不攻擊？'},{who:'比特幣三姐',text:'……等你放下戒心的那一刻。'}],
+  ninja_dead:[{who:'比特幣三姐',text:'從背後下手……居然還是輸了。'},{who:'10K DOG',text:'真正的敵人，往往在你看不見的地方。'}],
   crab_intro:[{who:'爆倉蟹貨',text:'我永不割肉！永不離場！你也別想通過！'},{who:'10K DOG',text:'牛市核心就在你身後。讓開。'}],
   crab_dead:[{who:'爆倉蟹貨',text:'為什麼……你能離場……'},{who:'10K DOG',text:'因為我知道什麼時候該走。'}],
   emperor_intro:[{who:'關稅大帝',text:'我要讓加密貨幣再次偉大——當然，是「我的」錢包。'},{who:'關稅大帝',text:'關稅！加息！禁幣！所有人，給我爆倉！'},{who:'10K DOG',text:'牛市核心就在你身後。今天我一定要帶它回家。'}],
@@ -420,7 +427,7 @@ function drawCoinItem(d){
   const x=Math.round(d.x),y=Math.round(d.y),t=G.t,k=d.k;
   if(k==='shiny'){const h=(t*400)%360;cx.fillStyle=`hsl(${h},100%,70%)`;cx.fillRect(x-10,y-10,20,20);cx.fillStyle='#000';cx.fillRect(x-8,y-8,16,16);
     cx.fillStyle='#fff';const b=Math.sin(t*10)>0;cx.fillRect(x-15,y-1,b?4:2,2);cx.fillRect(x+12,y-1,b?4:2,2);cx.fillRect(x-1,y-15,2,b?4:2);cx.fillRect(x-1,y+12,2,b?4:2)}
-  else if(k==='rare'){cx.fillStyle='#40D070';cx.fillRect(x-9,y-9,18,18);cx.fillStyle='#062A18';cx.fillRect(x-7,y-7,14,14);
+  else if(k==='rare'||(k==='common'&&d.c.t==='ADA')){cx.fillStyle='#40D070';cx.fillRect(x-9,y-9,18,18);cx.fillStyle='#062A18';cx.fillRect(x-7,y-7,14,14);
     cx.fillStyle='#40D070';cx.fillRect(x-1,y-14,2,4);cx.fillRect(x-3,y-13,6,1);cx.fillRect(x-2,y-14,4,1)} // ↑
   else if(k==='bad'){const f=Math.floor(t*6)%2;cx.fillStyle=f?'#E8453C':'#8C1A14';cx.fillRect(x-9,y-9,18,18);cx.fillStyle='#1A0808';cx.fillRect(x-7,y-7,14,14);
     cx.fillStyle='#E8453C';cx.fillRect(x-1,y+10,2,4);cx.fillRect(x-3,y+13,6,1);cx.fillRect(x-2,y+14,4,1); // ↓
@@ -545,7 +552,7 @@ function applyCommon(c,d){
   const p=G.p,k=c.key,say=t=>floatText(d.x,d.y,c.t+' '+t,'#9FB4FF');sfx.coin();G.score+=30;
   switch(k){
     case 'pierce':G.buf.pierce=5;say('穿透');break;
-    case 'heal':p.hp=Math.min(p.max,p.hp+1);say('+1 生命');break;
+    case 'ada':{const b=pick(COINS.bad);G.buf[b.key]=6;sfx.bad();G.shake=.25;floatText(d.x,d.y,'ADA：好幣，但……'+b.fx.split(' ')[0],'#FF9A94',1);break}
     case 'clearb':G.eb=[];burst(p.x,p.y,'#8CC8FF',20,160);say('清彈');break;
     case 's120':G.score+=120;say('+120');break;
     case 'mag5':G.buf.magnet=Math.max(G.buf.magnet||0,5);say('磁石');break;
@@ -846,7 +853,7 @@ function drawPortrait(g,who){
   else if(who==='Mars'){g.drawImage(MARS,2,3)}
   else if(who==='關稅大帝'){g.drawImage(SPR.emperor,3,3)}
   else if(who==='熊市大熊'){g.drawImage(BEAR,4,5)}
-  else if(who==='神秘刺客'||who==='？？？'){const i=img.ninja;if(i&&i.complete)g.drawImage(i,0,0,48,48,0,0,24,24)}
+  else if(who==='比特幣三姐'||who==='神秘刺客'||who==='？？？'){const i=img.ninja;if(i&&i.complete)g.drawImage(i,0,0,48,48,0,0,24,24)}
   else if(who==='爆倉蟹貨'){g.fillStyle='#D8402C';g.fillRect(3,9,18,8);g.fillRect(1,11,2,4);g.fillRect(21,11,2,4);g.fillRect(4,4,4,5);g.fillRect(16,4,4,5);g.fillStyle='#fff';g.fillRect(8,7,3,4);g.fillRect(13,7,3,4);g.fillStyle='#000';g.fillRect(9,8,1,1);g.fillRect(14,8,1,1)}
 }
 function dlgNext(){if(mode!=='dlg'||!DL)return;DL.i++;if(DL.i>=DL.lines.length){$('dlg').hidden=true;const cb=DL.cb;DL=null;mode='play';last=performance.now();if(cb)cb()}else showLine()}
@@ -864,12 +871,13 @@ function endScreen(won){
   $('oScore').textContent=fmt(G.score);$('oCoins').textContent='+'+fmt(G.coins);$('oWave').textContent=won?'終點':'L'+G.lvl;
   const rk=rankOf(G.score);$('oNew').hidden=false;$('oNew').innerHTML=(nb?'NEW RECORD · ':'')+medalHTML(rk,16)+' 市值 '+rk.cap+' '+rk.name;setTimeout(drawMedals,0);
   $('oShiny').hidden=!G.shinyGot.length;$('oShiny').textContent='✦ 本局獲得閃光幣：'+G.shinyGot.join('、')+'（截圖炫耀一下）';
-  const qualifies=S.lb.length<10||G.score>S.lb[S.lb.length-1].s;$('nameBox').hidden=!qualifies||G.score<=0;$('nameIn').value=S.lastName||'';$('bSubmit').disabled=false;
+  $('nameBox').hidden=G.score<=0;$('nameIn').value=S.lastName||'';$('bSubmit').disabled=false;
   show('over');
 }
 function gameOver(){endScreen(false)}
 function win(){G.won=true;addCoins(500);sfx.win();dialog(DIALOG.ending,()=>endScreen(true))}
-function submitScore(){const nm=($('nameIn').value||'匿名').trim().slice(0,10);S.lastName=nm;S.lb.push({n:nm,s:G.score,l:G.won?'終點':'L'+G.lvl,d:today()});S.lb.sort((a,b)=>b.s-a.s);S.lb=S.lb.slice(0,10);save();$('bSubmit').disabled=true;toast('已上榜');G.lbDone=true}
+function submitScore(){const nm=($('nameIn').value||'匿名').trim().slice(0,10);S.lastName=nm;const rec={n:nm,s:G.score,l:G.won?'終點':'L'+G.lvl,r:rankOf(G.score).cap};S.lb.push(Object.assign({d:today()},rec));S.lb.sort((a,b)=>b.s-a.s);S.lb=S.lb.slice(0,10);save();$('bSubmit').disabled=true;G.lbDone=true;
+  lbPush(rec).then(()=>toast('已上傳全球排行榜')).catch(()=>toast('已存本機（全球榜上傳失敗）'))}
 function renderShop(){
   $('sCoins').textContent=fmt(S.coins);
   $('upList').innerHTML=UPS.map(u=>{const lv=S.up[u.k],maxed=lv>=u.max,c=u.cost[lv];
@@ -889,7 +897,7 @@ function renderGuide(){
   const row=(c,tier)=>`<div class="coinRow ${tier}"><canvas data-c="${c.t}" data-t="${tier}" width="14" height="14"></canvas><div><b>${c.t}</b> ${c.name||''}<small>${c.fx}</small></div></div>`;
   $('gShiny').innerHTML=COINS.shiny.map(c=>row(c,'shiny')).join('');
   $('gRare').innerHTML=COINS.rare.map(c=>row(c,'rare')).join('');
-  $('gCommon').innerHTML=COINS.common.map(c=>row(c,'common')).join('');
+  $('gCommon').innerHTML=COINS.common.map(c=>row(c,c.t==='ADA'?'rare':'common')).join('');
   $('gBad').innerHTML=COINS.bad.map(c=>row(c,'bad')).join('');
   const seenN=MONS.filter(m=>S.seen.includes(m.k)).length;
   $('gMon').innerHTML=`<div class="fine" style="max-width:400px">已發現 ${seenN} / ${MONS.length} 種。未遇過的怪物不會顯示樣子。</div>`+MONS.map(m=>S.seen.includes(m.k)
@@ -900,8 +908,11 @@ function renderGuide(){
     if(SPR[k]){g.drawImage(SPR[k],Math.round(10-SPR[k].w/2),Math.round(10-SPR[k].h/2))}else if(k==='mars'){g.drawImage(MARS,0,1)}else if(k==='emperor'){g.drawImage(SPR.emperor,1,1)}else if(k==='ninja'){const i=img.ninja;const draw=()=>g.drawImage(i,0,0,48,48,0,0,20,20);i.complete?draw():i.onload=draw}else if(k==='bear'||k==='whale'||k==='crab'){g.drawImage(BEAR,2,3)}else if(k==='dealer'){const i=img.dealer;const draw=()=>g.drawImage(i,2,0);i.complete?draw():i.onload=draw}});
 }
 function renderBoard(){
-  const t=$('lbTable');if(!S.lb.length){t.innerHTML='<tr><td>還沒有紀錄，快去打第一場！</td></tr>';return}
-  t.innerHTML=S.lb.map((r,i)=>{const rk=rankOf(r.s);return `<tr class="${G&&G.lbDone&&r.s===G.score&&r.n===S.lastName?'me':''}"><td class="n">${i+1}</td><td>${medalHTML(rk,16)} ${esc(r.n)}<br><span style="font-size:10px;color:${rk.col}">${rk.cap} ${rk.name}</span></td><td style="color:var(--mute);font-size:11px">${r.l}</td><td class="s">${fmt(r.s)}</td></tr>`}).join('');drawMedals();
+  const t=$('lbTable');t.innerHTML='<tr><td>載入全球排行榜…</td></tr>';
+  lbFetch().then(rows=>{$('lbNote').textContent='全球排行榜 · 全社群共用';renderRows(rows.length?rows:[],true)}).catch(()=>{$('lbNote').textContent='連不上全球榜，顯示本機紀錄';renderRows(S.lb,false)});
+}
+function renderRows(rows,remote){const t=$('lbTable');if(!rows.length){t.innerHTML='<tr><td>還沒有紀錄，快去打第一場！</td></tr>';return}
+  t.innerHTML=rows.map((r,i)=>{const rk=rankOf(r.s);return `<tr class="${G&&G.lbDone&&r.s===G.score&&r.n===S.lastName?'me':''}"><td class="n">${i+1}</td><td>${medalHTML(rk,16)} ${esc(r.n)}<br><span style="font-size:10px;color:${rk.col}">${rk.cap} ${rk.name}</span></td><td style="color:var(--mute);font-size:11px">${r.l}</td><td class="s">${fmt(r.s)}</td></tr>`}).join('');drawMedals();
 }
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 $('upList').addEventListener('click',e=>{const b=e.target.closest('[data-up]');if(!b)return;const u=UPS.find(x=>x.k===b.dataset.up),lv=S.up[u.k];
