@@ -96,6 +96,16 @@ table.lb td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:left}
 table.lb td.n{font-family:var(--px);font-size:9px;color:var(--gold)}
 table.lb td.s{font-family:var(--px);font-size:10px;text-align:right}
 table.lb tr.me td{background:#2A1E5C}
+#bUlt{position:absolute;right:12px;bottom:26px;z-index:2;width:64px;height:64px;border:3px solid #000;background:var(--panel);color:var(--ink);font:900 12px var(--tc);box-shadow:3px 3px 0 #000;cursor:pointer;overflow:hidden;opacity:.55}
+#bUlt.ready{opacity:1;background:var(--gold);color:#2A1A00;animation:blink 1s steps(2) infinite}
+#bUlt span{position:relative;z-index:1}
+#bUlt i{position:absolute;left:0;bottom:0;width:100%;height:0;background:rgba(64,208,112,.55)}
+#bUlt.ready i{background:transparent}
+.ults{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%;max-width:400px}
+.ult2{background:var(--panel);border:2px solid var(--line);padding:10px 6px;text-align:center;cursor:pointer;font-size:12px}
+.ult2.sel{border-color:var(--gold);background:#2A1E5C}
+.ult2 b{display:block;font-size:13px;margin-bottom:4px}
+.ult2 small{color:var(--mute);font-size:10px;line-height:1.4}
 #toast{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);background:var(--green);color:#04291B;font-weight:900;padding:8px 14px;border:3px solid #000;font-size:13px;pointer-events:none;opacity:0;white-space:nowrap}
 #toast.show{opacity:1}
 </style>
@@ -114,6 +124,7 @@ table.lb tr.me td{background:#2A1E5C}
     <div id="hHp"></div>
     <div id="hBuff"></div>
   </div>
+  <button id="bUlt" class="ult" hidden><span id="ultName">大技</span><i id="ultBar"></i></button>
 
   <div id="home" class="ov clear">
     <div class="brand">10K DOG</div>
@@ -138,6 +149,8 @@ table.lb tr.me td{background:#2A1E5C}
   <div id="hangar" class="ov scroll" hidden>
     <div class="shopHead"><h2>機庫</h2><div class="wallet" style="font-size:11px;padding:6px 10px"><i class="ci"></i><span id="gCoins">0</span></div></div>
     <div id="jetList" class="jets"></div>
+    <div class="label">ULTIMATE · 大技（吃幣儲能）</div>
+    <div id="ultList" class="ults"></div>
     <button id="bHangarBack" class="btn ghost" style="width:100%;max-width:400px">返回主頁</button>
   </div>
 
@@ -200,7 +213,7 @@ function resize(){const r=app.getBoundingClientRect();SC=r.width/IW;H=Math.max(3
 
 /* ---------- 存檔 ---------- */
 const KEY='10kdog_shooter_v3';
-function fresh(){return{coins:500,best:0,up:{power:0,rate:0,hp:0,magnet:0},daily:'',shiny:0,jet:'gold',jets:['gold'],lb:[],seen:[]}}
+function fresh(){return{coins:500,best:0,up:{power:0,rate:0,hp:0,magnet:0},daily:'',shiny:0,jet:'gold',jets:['gold'],lb:[],seen:[],ult:'homing'}}
 let S=fresh();
 try{const o=JSON.parse(localStorage.getItem(KEY)||'null');if(o){S=Object.assign(fresh(),o);S.up=Object.assign(fresh().up,o.up||{})}}catch(e){}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
@@ -217,6 +230,12 @@ const JETS=[
   {k:'purple',name:'紫電隱形機',price:800,desc:'無敵時間 ×2・磁石 ×2<br>移速 +10%',spd:1.1,dmg:.9,rate:1,hp:0,inv:2,mag:2},
 ];
 const jetOf=k=>JETS.find(j=>j.k===k)||JETS[0];
+const ULTS=[
+  {k:'homing',name:'自動追蹤',desc:'8 秒內子彈自動追敵'},
+  {k:'cannon',name:'儲力巨炮',desc:'3 秒巨型光柱貫穿全場'},
+  {k:'freeze',name:'凍結敵人',desc:'6 秒全場敵人與敵彈大幅減速'},
+];
+const ultOf=k=>ULTS.find(u=>u.k===k)||ULTS[0];
 
 /* ---------- 幣種表 ---------- */
 const COINS={
@@ -383,7 +402,7 @@ function newRun(){
   let mult=1;if($('boost').checked&&S.coins>=40){S.coins-=40;mult=2;save()}$('boost').checked=false;
   const J=jetOf(S.jet),hp=Math.max(1,3+S.up.hp+J.hp);
   G={J,p:{x:W/2,y:H-60,hp,max:hp,inv:1.5,ft:0},b:[],e:[],eb:[],d:[],fx:[],tx:[],buf:{},shield:0,
-     score:0,coins:0,lvl:1,wt:0,st:1,boss:null,bossDone:false,warn:0,warned:false,mult,revived:false,t:0,banner:2.4,shake:0,candleT:2,freeze:0,flash:0,shinyGot:[],shinyOn:0,dealerT:rnd(4,9),dealerDone:false,portrait:0,planeT:6,sickleT:8,wallT:9,won:false};
+     score:0,coins:0,lvl:1,wt:0,st:1,boss:null,bossDone:false,warn:0,warned:false,mult,revived:false,t:0,banner:2.4,shake:0,candleT:2,freeze:0,flash:0,shinyGot:[],shinyOn:0,dealerT:rnd(4,9),dealerDone:false,portrait:0,planeT:6,sickleT:8,wallT:9,won:false,ult:0,ultOn:0,diff:1};
 }
 function nextLevel(){if(G.lvl>=LEVELS){win();return}G.lvl++;G.wt=0;G.st=1.2;G.banner=2.4;G.boss=null;G.bossDone=false;G.warned=false;G.warn=0;G.dealerT=rnd(3,8);G.dealerDone=false;G.planeT=5;G.sickleT=7;G.wallT=8}
 const has=k=>G.buf[k]>0;
@@ -482,7 +501,9 @@ function applyCommon(c,d){
     case 's60c3':G.score+=60;addCoins(3);say('+60 +3 幣');break;
   }
 }
-function addCoins(n){const v=n*G.mult*(has('magnet')?2:1);S.coins+=v;G.coins+=v}
+function addCoins(n){const v=n*G.mult*(has('magnet')?2:1);S.coins+=v;G.coins+=v;charge(n*2)}
+function charge(n){if(G.ultOn>0)return;const was=G.ult;G.ult=Math.min(100,G.ult+n);if(was<100&&G.ult>=100){sfx.power();floatText(G.p.x,G.p.y-24,'大技準備好了！','#FFF0B0',1)}}
+function fireUlt(){if(!G||mode!=='play'||G.ult<100||G.ultOn>0)return;const u=ultOf(S.ult);G.ult=0;G.ultKind=u.k;G.ultOn=u.k==='homing'?8:u.k==='cannon'?3:6;G.diff+=.08;G.flash=.6;G.shake=.4;sfx.jackpot();floatText(W/2,H*.45,'✦ '+u.name+' ✦','#FFF0B0',1)}
 function applyCoin(d){
   const c=d.c,p=G.p;
   if(d.k==='common'){applyCommon(c,d);return}
@@ -500,18 +521,22 @@ function update(dt){
   if(G.freeze>0){G.freeze-=dt;G.flash=Math.max(0,G.flash-dt*.8);return}
   G.flash=Math.max(0,G.flash-dt*2);
   for(const k in G.buf)if(G.buf[k]>0)G.buf[k]-=dt;
+  if(G.ultOn>0){G.ultOn-=dt;
+    if(G.ultKind==='cannon'){const bx=p.x;for(const e of G.e){if(e.t==='dealer'||e.t==='wall')continue;if(Math.abs(e.x-bx)<18&&e.y<p.y){e.hp-=(4+S.up.power)*dt*G.J.dmg*3;e.hf=.05;if(e.hp<=0&&!e.dead){e.dead=true;kill(e)}}}
+      G.eb=G.eb.filter(b=>Math.abs(b.x-bx)>=18||b.y>p.y)}}
   const spd=G.J.spd*(has('slow')?.5:1)*(has('moon')?1.35:1)*(has('spd')?1.3:1);
   let kx=(keys.ArrowRight||keys.d?1:0)-(keys.ArrowLeft||keys.a?1:0),ky=(keys.ArrowDown||keys.s?1:0)-(keys.ArrowUp||keys.w?1:0);
   if(kx||ky){p.x+=kx*170*spd*dt;p.y+=ky*170*spd*dt}
   if(dragV){p.x+=dragV.x*spd;p.y+=dragV.y*spd;dragV=null}
-  p.x=Math.min(Math.max(p.x,10),W-10);p.y=Math.min(Math.max(p.y,H*.3),H-20);
+  p.x=Math.min(Math.max(p.x,10),W-10);p.y=Math.min(Math.max(p.y,14),H-20);
+  if(mouseT){p.x+=(mouseT.x-p.x)*Math.min(1,dt*14)*spd;p.y+=(mouseT.y-p.y)*Math.min(1,dt*14)*spd}
   p.inv=Math.max(0,p.inv-dt);G.banner-=dt;G.shake=Math.max(0,G.shake-dt);
   p.ft-=dt;if(p.ft<=0){p.ft=fireInt();shoot()}
 
   const n=G.lvl,bossKind=BOSS_AT[n];
   if(!bossKind){
     G.wt+=dt;G.st-=dt;
-    if(G.st<=0&&G.wt<20){spawnEnemy();G.st=Math.max(.4,1.4-n*.1)*rnd(.75,1.3)}
+    if(G.st<=0&&G.wt<20){spawnEnemy();G.st=Math.max(.4,1.4-n*.1)*rnd(.75,1.3)/G.diff}
     if(n>=5&&G.wt<20){G.planeT-=dt;if(G.planeT<=0){spawnPlane();G.planeT=rnd(5,9)-n*.3}}
     if(n>=4&&G.wt<20){G.wallT-=dt;if(G.wallT<=0){spawnWall();G.wallT=rnd(10,14)}}
     if(n>=6&&G.wt<20){G.sickleT-=dt;if(G.sickleT<=0){spawnSickle();G.sickleT=rnd(6,10)-n*.3}}
@@ -527,10 +552,14 @@ function update(dt){
   if(n>=3&&!G.dealerDone&&!bossKind){G.dealerT-=dt;if(G.dealerT<=0){G.dealerDone=true;if(Math.random()<.7){spawnDealer();G.portrait=2.2;floatText(W/2,H*.28,'莊家降臨！全部怪物暫時射不死','#FFF',1);sfx.bad();G.shake=.3}}}
   if(G.portrait>0)G.portrait-=dt;
 
-  for(const b of G.b){b.x+=b.vx*dt;b.y+=b.vy*dt}
+  const homing=G.ultOn>0&&G.ultKind==='homing';
+  for(const b of G.b){
+    if(homing){let best=null,bd=1e9;for(const e of G.e){if(e.t==='dealer'||e.t==='wall'||e.y>b.y+40)continue;const d2=(e.x-b.x)**2+(e.y-b.y)**2;if(d2<bd){bd=d2;best=e}}
+      if(best){const ang=Math.atan2(best.y-b.y,best.x-b.x),sp=340;b.vx+=(Math.cos(ang)*sp-b.vx)*Math.min(1,dt*8);b.vy+=(Math.sin(ang)*sp-b.vy)*Math.min(1,dt*8)}}
+    b.x+=b.vx*dt;b.y+=b.vy*dt}
   G.b=G.b.filter(b=>b.y>-10&&b.x>-10&&b.x<W+10&&!b.dead);
 
-  const edt=has('freeze')?dt*.4:dt,curse=G.e.some(e=>e.t==='dealer');
+  const ufz=G.ultOn>0&&G.ultKind==='freeze',edt=(has('freeze')?dt*.4:dt)*(ufz?.15:1),curse=G.e.some(e=>e.t==='dealer');
   for(const e of G.e){
     e.hf=Math.max(0,e.hf-dt);const dt0=dt;dt=e.t==='dealer'?dt0:edt;
     if(e.t==='candle')e.y+=e.vy*dt;
@@ -563,7 +592,7 @@ function update(dt){
   G.e=G.e.filter(e=>!e.dead&&e.y<H+30);
   if(G.boss&&G.boss.dead)G.boss=null;
 
-  for(const b of G.eb){b.x+=b.vx*dt;b.y+=b.vy*dt;const dx=b.x-p.x,dy=b.y-p.y;if(dx*dx+dy*dy<36){b.dead=true;hurt();if(mode!=='play')return}}
+  for(const b of G.eb){const bdt=ufz?dt*.15:dt;b.x+=b.vx*bdt;b.y+=b.vy*bdt;const dx=b.x-p.x,dy=b.y-p.y;if(dx*dx+dy*dy<36){b.dead=true;hurt();if(mode!=='play')return}}
   G.eb=G.eb.filter(b=>!b.dead&&b.y<H+10&&b.y>-20&&b.x>-10&&b.x<W+10);
 
   const mag=(30+S.up.magnet*26)*G.J.mag*(has('magnet')?2.5:1);
@@ -576,7 +605,7 @@ function update(dt){
     if(dist<12){d.dead=true;
       if(d.k==='coin'||d.k==='coinB'){addCoins(d.k==='coinB'?5:1);sfx.coin();if(d.k==='coinB')floatText(d.x,d.y,'+'+5*G.mult,'#FFF0B0')}
       else if(d.k==='bone'){p.hp=Math.min(p.max,p.hp+1);sfx.power();floatText(d.x,d.y,'+1 生命','#FF8FB8')}
-      else applyCoin(d)}
+      else{charge(10);applyCoin(d)}}
   }
   G.d=G.d.filter(d=>!d.dead&&d.y<H+20);
   if(!G.d.some(d=>d.k==='shiny'))G.shinyOn=0;
@@ -631,6 +660,8 @@ function render(){
     else{cx.globalAlpha=e.hf?.5:1;blit(SPR[e.t],e.x,e.y);cx.globalAlpha=1;
       if((e.t==='bomb'||e.t==='plane')&&e.hp<e.max){cx.fillStyle='#000';cx.fillRect(Math.round(e.x)-10,Math.round(e.y)-14,20,3);cx.fillStyle='#E8453C';cx.fillRect(Math.round(e.x)-10,Math.round(e.y)-14,Math.round(20*e.hp/e.max),3)}}
   }
+  if(G.ultOn>0&&G.ultKind==='cannon'){const bx=Math.round(p.x),f=Math.floor(G.t*20)%2;cx.fillStyle=f?'rgba(255,240,176,.85)':'rgba(248,200,56,.85)';cx.fillRect(bx-16,0,32,Math.round(p.y)-10);cx.fillStyle='#fff';cx.fillRect(bx-6,0,12,Math.round(p.y)-10)}
+  if(G.ultOn>0&&G.ultKind==='homing'){cx.strokeStyle='rgba(64,208,112,.6)';cx.strokeRect(Math.round(p.x)-14.5,Math.round(p.y)-14.5,29,29)}
   for(const b of G.b){cx.fillStyle=b.g?'#40D070':'#FFF0B0';cx.fillRect(Math.round(b.x)-1,Math.round(b.y)-4,2,6)}
   const ghost=has('ghost');
   if(!(p.inv>0&&Math.floor(G.t*12)%2)){
@@ -649,6 +680,7 @@ function render(){
   cx.globalAlpha=1;cx.restore();
   if(has('narrow')){cx.fillStyle='rgba(0,0,0,.85)';const r=52;cx.fillRect(0,0,W,Math.max(0,p.y-r));cx.fillRect(0,p.y+r,W,H);cx.fillRect(0,p.y-r,Math.max(0,p.x-r),r*2);cx.fillRect(p.x+r,p.y-r,W,r*2)}
   if(dark){cx.fillStyle='rgba(0,0,0,.45)';cx.fillRect(0,0,W,H)}
+  if(G.ultOn>0&&G.ultKind==='freeze'){cx.fillStyle='rgba(140,200,255,.18)';cx.fillRect(0,0,W,H)}
   if(G.flash>0){cx.fillStyle=`rgba(255,255,255,${G.flash*.9})`;cx.fillRect(0,0,W,H)}
   // 航程條
   cx.fillStyle='#000';cx.fillRect(10,H-8,W-20,4);cx.fillStyle='#4B3A8C';cx.fillRect(11,H-7,W-22,2);cx.fillStyle='#F8C838';cx.fillRect(11,H-7,Math.round((W-22)*(G.lvl-1)/(LEVELS-1)),2);
@@ -672,15 +704,16 @@ function render(){
 const fmt=n=>Math.floor(n).toLocaleString('en-US');
 let hudCache='';
 function hud(){
-  const p=G.p,bufs=Object.keys(G.buf).filter(k=>G.buf[k]>0),key=[S.coins,G.score,G.lvl,p.hp,p.max,bufs.join(),G.shield].join('|');
+  const p=G.p,bufs=Object.keys(G.buf).filter(k=>G.buf[k]>0),key=[S.coins,G.score,G.lvl,p.hp,p.max,bufs.join(),G.shield,G.ult|0,G.ultOn>0].join('|');
   if(key===hudCache)return;hudCache=key;
+  const ub=$('bUlt');ub.hidden=false;ub.classList.toggle('ready',G.ult>=100&&G.ultOn<=0);$('ultBar').style.height=Math.min(100,G.ult)+'%';$('ultName').textContent=G.ultOn>0?'發動中':G.ult>=100?'大技！':ultOf(S.ult).name;
   $('hCoins').textContent=fmt(S.coins);$('hScore').textContent=fmt(G.score);$('hWave').textContent='L'+G.lvl;
   $('hHp').innerHTML=Array.from({length:p.max},(_,i)=>`<i class="${i<p.hp?'':'off'}"></i>`).join('');
   const bad=['slow','weak','dark','narrow'];
   $('hBuff').innerHTML=(G.shield?'<span class="good">BNB 護盾</span>':'')+bufs.map(k=>`<span class="${bad.includes(k)?'bad':'good'}">${BUFF_NAME[k]}</span>`).join('');
 }
 const OVS=['home','hangar','shop','guide','board','pause','over'];
-function show(id){OVS.forEach(k=>$(k).hidden=k!==id);$('hud').hidden=!(id==='play'||id==='pause')}
+function show(id){OVS.forEach(k=>$(k).hidden=k!==id);$('hud').hidden=!(id==='play'||id==='pause');$('bUlt').hidden=id!=='play'}
 function today(){const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()}
 function refreshHome(){$('wCoins').textContent=fmt(S.coins);$('wBest').textContent=fmt(S.best);$('bDaily').hidden=S.daily===today();$('boost').disabled=S.coins<40;if(S.coins<40)$('boost').checked=false}
 function toast(t){const el=$('toast');el.textContent=t;el.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>el.classList.remove('show'),1600)}
@@ -711,7 +744,9 @@ function renderHangar(){
   $('jetList').innerHTML=JETS.map(j=>{const own=S.jets.includes(j.k),sel=S.jet===j.k;
     return `<div class="jet ${sel?'sel':''}"><img src="${IMG['jetbig_'+j.k]}" alt=""><b>${j.name}</b><small>${j.desc}</small>
       <button class="btn small ${own?'ghost':''}" data-jet="${j.k}" ${sel||(!own&&S.coins<j.price)?'disabled':''}>${sel?'使用中':own?'選用':'<i class="ci"></i> '+fmt(j.price)}</button></div>`}).join('');
+  $('ultList').innerHTML=ULTS.map(u=>`<div class="ult2 ${S.ult===u.k?'sel':''}" data-ult="${u.k}"><b>${u.name}</b><small>${u.desc}</small></div>`).join('');
 }
+$('ultList').addEventListener('click',e=>{const b=e.target.closest('[data-ult]');if(!b)return;S.ult=b.dataset.ult;save();audio();sfx.buy();renderHangar()});
 function renderGuide(){
   const row=(c,tier)=>`<div class="coinRow ${tier}"><canvas data-c="${c.t}" data-t="${tier}" width="14" height="14"></canvas><div><b>${c.t}</b> ${c.name||''}<small>${c.fx}</small></div></div>`;
   $('gShiny').innerHTML=COINS.shiny.map(c=>row(c,'shiny')).join('');
@@ -740,20 +775,25 @@ $('bHangar').onclick=()=>{renderHangar();show('hangar')};$('bHangarBack').onclic
 $('bGuide').onclick=()=>{renderGuide();show('guide')};$('bGuideBack').onclick=goHome;
 $('bBoard').onclick=()=>{renderBoard();show('board')};$('bBoardBack').onclick=goHome;
 $('bDaily').onclick=()=>{S.coins+=100;S.daily=today();save();audio();sfx.buy();toast('每日獎勵 +100 幣');refreshHome()};
-$('bPause').onclick=pause;$('bResume').onclick=resume;$('bQuit').onclick=goHome;
+$('bUlt').onclick=fireUlt;$('bPause').onclick=pause;$('bResume').onclick=resume;$('bQuit').onclick=goHome;
 $('bAgain').onclick=start;$('bHome').onclick=goHome;$('bSubmit').onclick=submitScore;
 $('nameIn').addEventListener('keydown',e=>{if(e.key==='Enter')submitScore();e.stopPropagation()});
 
 /* ---------- 操作：任何位置拖動 ---------- */
 const keys={};let drag=null,dragV=null;
 addEventListener('keydown',e=>{if(e.target.tagName==='INPUT')return;const k=e.key.length===1?e.key.toLowerCase():e.key;keys[k]=true;
+  if(k===' '){if(mode==='play')fireUlt();e.preventDefault()}
   if(k==='p'||k==='Escape'){mode==='play'?pause():mode==='pause'&&resume()}if(k.startsWith('Arrow')&&mode==='play')e.preventDefault()});
 addEventListener('keyup',e=>{const k=e.key.length===1?e.key.toLowerCase():e.key;keys[k]=false});
 function pd(x,y){if(mode!=='play')return;audio();drag={x,y}}
 function pm(x,y){if(!drag||mode!=='play')return;dragV={x:(dragV?dragV.x:0)+(x-drag.x)/SC*1.3,y:(dragV?dragV.y:0)+(y-drag.y)/SC*1.3};drag={x,y}}
 function pu(){drag=null;dragV=null}
+let mouseT=null;
+app.addEventListener('pointermove',e=>{if(e.pointerType!=='mouse'||mode!=='play'||drag)return;const r=app.getBoundingClientRect();mouseT={x:(e.clientX-r.left)/SC,y:(e.clientY-r.top)/SC}},{passive:true});
+app.addEventListener('pointerleave',()=>{mouseT=null});
+app.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse')mouseT=null},{passive:true});
 if(window.PointerEvent){
-  app.addEventListener('pointerdown',e=>{if(e.target.closest('button,input,label'))return;pd(e.clientX,e.clientY);try{app.setPointerCapture(e.pointerId)}catch(_){}},{passive:true});
+  app.addEventListener('pointerdown',e=>{if(mode!=='play'||e.target.closest('button,input,label'))return;pd(e.clientX,e.clientY);try{app.setPointerCapture(e.pointerId)}catch(_){}},{passive:true});
   app.addEventListener('pointermove',e=>pm(e.clientX,e.clientY),{passive:true});
   ['pointerup','pointercancel','lostpointercapture'].forEach(t=>app.addEventListener(t,pu));
 }else{
